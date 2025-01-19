@@ -11,9 +11,10 @@ contract JobBoard is Ownable, ReentrancyGuard {
     Counters.Counter private totalJobs;
     Counters.Counter private totalApplications;
 
-    uint256 public serviceFee = 0.01 ether;
+    uint256 public serviceFee;
 
     constructor(uint256 _serviceFee) {
+        require(_serviceFee > 0, "Service fee must be greater than 0");
         serviceFee = _serviceFee;
     }
 

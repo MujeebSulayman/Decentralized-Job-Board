@@ -1,6 +1,9 @@
 const { ethers } = require("hardhat");
+const hre = require("hardhat");
 
-
+/**
+ * @dev This script is used to deploy the JobBoard contract to the Sepolia testnet.
+ */
 async function main() {
   console.log("Deploying JobBoard to sepolia testnet...");
 
@@ -16,10 +19,10 @@ async function main() {
 
     console.log("Deploying JobBoard...");
 
-    const jobboard = await JobBoard.deploy();
-    await jobboard.deployed();
+    const jobboard = await JobBoard.deploy(hre.ethers.parseEther("0.01"));
+    await jobboard.waitForDeployment();
 
-    console.log("JobBoard deployed at:", jobboard.address);
+    console.log("JobBoard deployed at:", await jobboard.getAddress());
 
     const fs = require("fs");
     const contractsDir = __dirname + "/../contracts";
@@ -30,7 +33,7 @@ async function main() {
 
     fs.writeFileSync(
       contractsDir + "/contractAddress.json",
-      JSON.stringify({ JobBoard: jobboard.address }, undefined, 2)
+      JSON.stringify({ JobBoard: await jobboard.getAddress() }, undefined, 2)
     );
 
     console.log("Contract address saved to contractAddress.json");

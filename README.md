@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HemBoard: Decentralized Job Marketplace 🌐💼
 
-## Getting Started
+## Overview
+HemBoard is a cutting-edge, blockchain-powered job marketplace that revolutionizes how employers and job seekers connect, offering transparency, security, and efficiency through smart contract technology.
 
-First, run the development server:
+## 🚀 Key Features
 
+### Smart Contract Capabilities
+- **Flexible Job Posting**: Create detailed job listings with custom fields
+- **Secure Application Management**: Track and manage job applications on-chain
+- **Work Mode Flexibility**: Support for remote, onsite, and hybrid work modes
+- **Comprehensive Job Types**: 
+  - Full-time
+  - Part-time
+  - Internship
+  - Freelance
+  - Contract
+
+### Technical Highlights
+- Built on Solidity 0.8.28
+- Leverages OpenZeppelin's security libraries
+- Implements Ownable and ReentrancyGuard for enhanced security
+- Supports IPFS integration for job logos and CVs (via Content Identifiers)
+
+## 🛡️ Security Features
+- Owner-controlled service fee management
+- Job deletion and closure controls
+- Application state tracking
+- Reentrancy protection
+
+## 📋 Job Posting Attributes
+- Unique job ID
+- Employer address
+- Organization details
+- Job description
+- Custom fields
+- Salary range
+- Work mode
+- Job type
+
+## 🔍 Application Workflow
+1. Job Posting
+2. Application Submission
+3. Application State Management
+   - Submitted
+   - Reviewed
+   - Email Sent
+   - Closed
+
+## 💻 Tech Stack
+- Solidity
+- Ethereum
+- IPFS
+- Next.js
+- Hardhat
+- Wagmi
+- RainbowKit
+
+## 🚧 Planned Enhancements
+- Advanced job matching algorithms
+- Reputation scoring system
+- Enhanced communication tools
+- Skill verification mechanisms
+
+## 📦 Installation
+
+### Prerequisites
+- Node.js 16+
+- Ethereum Wallet
+- Hardhat
+
+### Setup
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Clone the repository
+git clone https://github.com/MujeebSulayman/Web3-Job-Board
+
+# Install dependencies
+npm install
+
+# Compile contracts
+npx hardhat compile
+
+# Run tests
+npx hardhat test
+
+# Deploy to local network
+npx hardhat run scripts/deploy.js
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🤝 Contributing
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a new Pull Request
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📄 License
+This project is licensed under [MIT] - see the LICENSE file for details.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 💡 Contact
+- Project Developer: Mujeeb Sulayman
+- Email: Sulaymanmujeeb6@gmail.com
+- Twitter: [@thehemjay](https://x.com/thehemjay)
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Disclaimer**: HemBoard is a decentralized application. Always do your own research and understand the risks involved in blockchain technologies.
