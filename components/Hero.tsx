@@ -38,10 +38,10 @@ const Hero = () => {
           }}
           className="text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight"
         >
-          Decentralized{" "}
+           Web3 Jobs -{" "}
           <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 animate-gradient-x">
-            Job Verification
+          Blockchain, Crypto Careers
           </span>
         </motion.h1>
 

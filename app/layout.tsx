@@ -7,7 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 export const metadata: Metadata = {
   title: "HemBoard",
-  description: "Hemboarding web3 jobs",
+  description: "Decentralized Job Marketplace",
 };
 
 import { Space_Grotesk } from "next/font/google";
