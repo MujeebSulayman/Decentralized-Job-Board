@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
-pragma solidity >= 0.8.28 <0.9.0;
+pragma solidity >=0.8.28 <0.9.0;
 
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/utils/Counters.sol';
-import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
-import "hardhat/console.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract JobBoard is Ownable, ReentrancyGuard {
     using Counters for Counters.Counter;
@@ -39,18 +38,20 @@ contract JobBoard is Ownable, ReentrancyGuard {
 
     event ServiceFeeUpdated(uint256 oldFee, uint256 newFee);
 
+    event JobExpired(uint256 indexed jobId, address indexed employer);
+
     enum WorkMode {
-        remote,
-        onsite,
-        hybrid
+        Remote,
+        Onsite,
+        Hybrid
     }
 
     enum JobType {
-        fullTime,
-        partTime,
-        internship,
-        freelance,
-        contractType
+        FullTime,
+        PartTime,
+        Internship,
+        Freelance,
+        Contract
     }
 
     enum ApplicationState {
@@ -78,6 +79,8 @@ contract JobBoard is Ownable, ReentrancyGuard {
         bool deleted;
         uint256 startTime;
         uint256 endTime;
+        uint256 expirationTime;
+        bool expired;
         JobType jobType;
         WorkMode workMode;
         string minimumSalary;
@@ -127,15 +130,15 @@ contract JobBoard is Ownable, ReentrancyGuard {
         JobType jobType,
         WorkMode workMode,
         string memory minimumSalary,
-        string memory maximumSalary
+        string memory maximumSalary,
+        uint256 expirationDays
     ) public payable nonReentrant {
         require(msg.value >= serviceFee, "Insufficient fund");
+        require(expirationDays > 0, "Expiration days must be greater than 0");
         require(bytes(orgName).length > 0, "Organisation name cannot be empty");
         require(bytes(title).length > 0, "Title cannot be empty");
         require(bytes(description).length > 0, "Description cannot be empty");
         require(bytes(logoCID).length > 0, "Logo cannot be empty");
-        uint256 calculatedEndTime = block.timestamp + 45 days;
-        require(calculatedEndTime > block.timestamp, "Invalid job duration");
 
         CustomField[] memory customField = new CustomField[](fieldName.length);
         for (uint i = 0; i < fieldName.length; i++) {
@@ -160,7 +163,9 @@ contract JobBoard is Ownable, ReentrancyGuard {
             isOpen: true,
             deleted: false,
             startTime: block.timestamp,
-            endTime: calculatedEndTime,
+            endTime: block.timestamp + 45 days,
+            expirationTime: block.timestamp + (expirationDays * 1 days),
+            expired: false,
             jobType: jobType,
             workMode: workMode,
             minimumSalary: minimumSalary,
@@ -230,6 +235,41 @@ contract JobBoard is Ownable, ReentrancyGuard {
         jobs[id].deleted = true;
     }
 
+    function isJobExpired(uint256 jobId) public view returns (bool) {
+        require(jobId > 0 && jobId <= totalJobs.current(), "Invalid job ID");
+        
+        // Check if job is deleted or past expiration time
+        return jobs[jobId].deleted || 
+               block.timestamp > jobs[jobId].expirationTime;
+    }
+
+    function checkJobExpiration(uint256 jobId) public {
+        require(jobId > 0 && jobId <= totalJobs.current(), "Invalid job ID");
+
+        if (
+            block.timestamp > jobs[jobId].expirationTime &&
+            !jobs[jobId].deleted &&
+            !jobs[jobId].expired
+        ) {
+            jobs[jobId].expired = true;
+            emit JobExpired(jobId, jobs[jobId].employer);
+        }
+    }
+
+    function expireJob(uint256 jobId) public {
+        require(
+            jobs[jobId].employer == msg.sender || owner() == msg.sender, 
+            "Only job employer or owner can expire the job"
+        );
+        require(!jobs[jobId].deleted, "Job already deleted");
+        
+        // Mark job as expired
+        jobs[jobId].expirationTime = block.timestamp;
+        
+        // Emit event
+        emit JobExpired(jobId, jobs[jobId].employer);
+    }
+
     function applyForJob(
         uint256 jobId,
         string memory name,
@@ -239,7 +279,7 @@ contract JobBoard is Ownable, ReentrancyGuard {
         string memory cvCID,
         string[] memory fieldResponses
     ) public nonReentrant {
-        require(!jobs[jobId].deleted, "Job has been deleted");
+        require(!isJobExpired(jobId), "Job has expired or been deleted");
         require(jobs[jobId].isOpen, "Job is no longer accepting applications");
 
         require(bytes(name).length > 0, "Name cannot be empty");
@@ -325,25 +365,28 @@ contract JobBoard is Ownable, ReentrancyGuard {
         jobs[jobId].isOpen = false;
     }
 
-    function getJobDetails(
-        uint256 jobId
-    ) public view returns (JobStruct memory) {
-        require(jobs[jobId].deleted == false, "Job does not exist");
+    function getJob(uint256 jobId) public view returns (JobStruct memory) {
+        require(!isJobExpired(jobId), "Job has expired or been deleted");
         return jobs[jobId];
     }
 
     function getAllJobs() public view returns (JobStruct[] memory) {
         uint256 allAvailableJobs = 0;
+        
+        // First, count available jobs
         for (uint i = 1; i <= totalJobs.current(); i++) {
-            if (!jobs[i].deleted) {
+            if (!isJobExpired(i)) {
                 allAvailableJobs++;
             }
         }
 
+        // Create array of available jobs
         JobStruct[] memory availableJobs = new JobStruct[](allAvailableJobs);
         uint256 index = 0;
+        
+        // Populate available jobs
         for (uint i = 1; i <= totalJobs.current(); i++) {
-            if (!jobs[i].deleted) {
+            if (!isJobExpired(i)) {
                 availableJobs[index] = jobs[i];
                 index++;
             }
