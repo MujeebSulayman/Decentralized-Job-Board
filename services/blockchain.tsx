@@ -1,5 +1,5 @@
-import address from "@/contracts/contractAddress.json";
-import abi from "@/artifacts/contracts/JobBoard.sol/JobBoard.json";
+import address from "../contracts/contractAddress.json";
+import abi from "../artifacts/contracts/JobBoard.sol/JobBoard.json";
 import { ethers } from "ethers";
 
 const toWei = (num: number) => ethers.parseEther(num.toString());
