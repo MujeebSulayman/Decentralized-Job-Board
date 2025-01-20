@@ -1,20 +1,30 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity >=0.8.28 <0.9.0;
 
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract JobBoard is Ownable, ReentrancyGuard {
+contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     using Counters for Counters.Counter;
     Counters.Counter private totalJobs;
     Counters.Counter private totalApplications;
 
     uint256 public serviceFee;
 
+    bytes32 public constant EMPLOYER_ROLE = keccak256("EMPLOYER_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant JOB_MANAGER_ROLE = keccak256("JOB_MANAGER_ROLE");
+
     constructor(uint256 _serviceFee) {
         require(_serviceFee > 0, "Service fee must be greater than 0");
         serviceFee = _serviceFee;
+
+        _grantRole(ADMIN_ROLE, msg.sender);
+        _grantRole(JOB_MANAGER_ROLE, msg.sender);
+        _grantRole(EMPLOYER_ROLE, msg.sender);
+        
     }
 
     mapping(uint256 => JobStruct) public jobs;
@@ -119,6 +129,12 @@ contract JobBoard is Ownable, ReentrancyGuard {
         emit ServiceFeeUpdated(oldFee, _newFee);
     }
 
+    function _grantEmployerRole(address employer) internal {
+        if (!hasRole(EMPLOYER_ROLE, employer)) {
+            _grantRole(EMPLOYER_ROLE, employer);
+        }
+    }
+
     function postJob(
         string memory orgName,
         string memory title,
@@ -132,7 +148,7 @@ contract JobBoard is Ownable, ReentrancyGuard {
         string memory minimumSalary,
         string memory maximumSalary,
         uint256 expirationDays
-    ) public payable nonReentrant {
+    ) public payable nonReentrant returns (uint256) {
         require(msg.value >= serviceFee, "Insufficient fund");
         require(expirationDays > 0, "Expiration days must be greater than 0");
         require(bytes(orgName).length > 0, "Organisation name cannot be empty");
@@ -174,7 +190,10 @@ contract JobBoard is Ownable, ReentrancyGuard {
 
         employerJobs[msg.sender].push(currentJobId);
 
+        _grantEmployerRole(msg.sender);
+
         emit JobPosted(currentJobId, msg.sender, title, orgName);
+        return currentJobId;
     }
 
     function editJob(
@@ -190,11 +209,13 @@ contract JobBoard is Ownable, ReentrancyGuard {
         WorkMode workMode,
         string memory minimumSalary,
         string memory maximumSalary
-    ) public {
+    ) public nonReentrant {
         require(!jobs[id].deleted, "Job has been deleted");
         require(
-            jobs[id].employer == msg.sender || owner() == msg.sender,
-            "Only employer or contract owner can edit this job"
+            hasRole(ADMIN_ROLE, msg.sender) ||
+            hasRole(EMPLOYER_ROLE, msg.sender) || 
+            hasRole(JOB_MANAGER_ROLE, msg.sender),
+            "Not authorized to edit job"
         );
         require(bytes(orgName).length > 0, "Organisation name cannot be empty");
         require(bytes(title).length > 0, "Title cannot be empty");
@@ -227,8 +248,10 @@ contract JobBoard is Ownable, ReentrancyGuard {
 
     function deleteJob(uint256 id) public {
         require(
-            jobs[id].employer == msg.sender || owner() == msg.sender,
-            "Only employer or contract owner can delete this job"
+            hasRole(ADMIN_ROLE, msg.sender) ||
+            hasRole(EMPLOYER_ROLE, msg.sender) || 
+            hasRole(JOB_MANAGER_ROLE, msg.sender),
+            "Not authorized to delete job"
         );
         require(!jobs[id].deleted, "Job has already been deleted");
 
@@ -237,10 +260,9 @@ contract JobBoard is Ownable, ReentrancyGuard {
 
     function isJobExpired(uint256 jobId) public view returns (bool) {
         require(jobId > 0 && jobId <= totalJobs.current(), "Invalid job ID");
-        
-        // Check if job is deleted or past expiration time
-        return jobs[jobId].deleted || 
-               block.timestamp > jobs[jobId].expirationTime;
+
+        return
+            jobs[jobId].deleted || block.timestamp > jobs[jobId].expirationTime;
     }
 
     function checkJobExpiration(uint256 jobId) public {
@@ -258,15 +280,15 @@ contract JobBoard is Ownable, ReentrancyGuard {
 
     function expireJob(uint256 jobId) public {
         require(
-            jobs[jobId].employer == msg.sender || owner() == msg.sender, 
-            "Only job employer or owner can expire the job"
+            hasRole(ADMIN_ROLE, msg.sender) ||
+            hasRole(EMPLOYER_ROLE, msg.sender) || 
+            hasRole(JOB_MANAGER_ROLE, msg.sender),
+            "Not authorized to expire job"
         );
         require(!jobs[jobId].deleted, "Job already deleted");
-        
-        // Mark job as expired
+
         jobs[jobId].expirationTime = block.timestamp;
-        
-        // Emit event
+
         emit JobExpired(jobId, jobs[jobId].employer);
     }
 
@@ -339,8 +361,10 @@ contract JobBoard is Ownable, ReentrancyGuard {
         require(jobs[jobId].id > 0 && !jobs[jobId].deleted, "Invalid job");
 
         require(
-            jobs[jobId].employer == msg.sender || owner() == msg.sender,
-            "Only job employer or contract owner can update application status"
+            hasRole(ADMIN_ROLE, msg.sender) ||
+            hasRole(EMPLOYER_ROLE, msg.sender) || 
+            hasRole(JOB_MANAGER_ROLE, msg.sender),
+            "Not authorized to update application status"
         );
 
         bool applicantFound = false;
@@ -358,8 +382,10 @@ contract JobBoard is Ownable, ReentrancyGuard {
 
     function closeJob(uint256 jobId) public {
         require(
-            jobs[jobId].employer == msg.sender || owner() == msg.sender,
-            "Only employer or owner can close the job"
+            hasRole(ADMIN_ROLE, msg.sender) ||
+            hasRole(EMPLOYER_ROLE, msg.sender) || 
+            hasRole(JOB_MANAGER_ROLE, msg.sender),
+            "Not authorized to close job"
         );
 
         jobs[jobId].isOpen = false;
@@ -372,19 +398,16 @@ contract JobBoard is Ownable, ReentrancyGuard {
 
     function getAllJobs() public view returns (JobStruct[] memory) {
         uint256 allAvailableJobs = 0;
-        
-        // First, count available jobs
+
         for (uint i = 1; i <= totalJobs.current(); i++) {
             if (!isJobExpired(i)) {
                 allAvailableJobs++;
             }
         }
 
-        // Create array of available jobs
         JobStruct[] memory availableJobs = new JobStruct[](allAvailableJobs);
         uint256 index = 0;
-        
-        // Populate available jobs
+
         for (uint i = 1; i <= totalJobs.current(); i++) {
             if (!isJobExpired(i)) {
                 availableJobs[index] = jobs[i];
@@ -421,6 +444,12 @@ contract JobBoard is Ownable, ReentrancyGuard {
         uint256 applicantIndex
     ) public view returns (ApplicationStruct memory) {
         require(
+            hasRole(ADMIN_ROLE, msg.sender) ||
+            hasRole(EMPLOYER_ROLE, msg.sender) || 
+            hasRole(JOB_MANAGER_ROLE, msg.sender),
+            "Not authorized to view applicant"
+        );
+        require(
             jobs[jobId].id != 0 && !jobs[jobId].deleted,
             "Job does not exist"
         );
@@ -435,8 +464,10 @@ contract JobBoard is Ownable, ReentrancyGuard {
         uint256 jobId
     ) public view returns (uint256) {
         require(
-            jobs[jobId].employer == msg.sender || owner() == msg.sender,
-            "Only job employer or contract owner can view applications"
+            hasRole(ADMIN_ROLE, msg.sender) ||
+            hasRole(EMPLOYER_ROLE, msg.sender) || 
+            hasRole(JOB_MANAGER_ROLE, msg.sender),
+            "Not authorized to view applications"
         );
         return jobApplications[jobId].length;
     }
@@ -445,10 +476,24 @@ contract JobBoard is Ownable, ReentrancyGuard {
         uint256 jobId
     ) public view returns (ApplicationStruct[] memory) {
         require(
-            jobs[jobId].employer == msg.sender || owner() == msg.sender,
-            "Only job employer or contract owner can view applications"
+            hasRole(ADMIN_ROLE, msg.sender) ||
+            hasRole(EMPLOYER_ROLE, msg.sender) || 
+            hasRole(JOB_MANAGER_ROLE, msg.sender),
+            "Not authorized to view applications"
         );
         return jobApplications[jobId];
+    }
+
+    function grantJobManagerRole(address account) external onlyRole(ADMIN_ROLE) {
+        grantRole(JOB_MANAGER_ROLE, account);
+    }
+
+    function revokeJobManagerRole(address account) external onlyRole(ADMIN_ROLE) {
+        revokeRole(JOB_MANAGER_ROLE, account);
+    }
+
+    function checkRole(bytes32 role, address account) external view returns (bool) {
+        return hasRole(role, account);
     }
 
     function withdrawFunds() public onlyOwner {

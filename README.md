@@ -28,6 +28,38 @@ HemBoard is a cutting-edge, blockchain-powered job marketplace that revolutioniz
 - Application state tracking
 - Reentrancy protection
 
+## 🔐 Access Control and Role Management
+
+### Roles
+HemBoard implements a comprehensive role-based access control system with three primary roles:
+
+1. **Admin Role**
+   - Highest level of access
+   - Automatically granted all roles upon contract deployment
+   - Can perform all actions across the platform
+   - Manages job postings, applications, and system settings
+
+2. **Employer Role**
+   - Can post and manage their own jobs
+   - Track and update job applications
+   - Modify job listings
+
+3. **Job Manager Role**
+   - Oversee job-related operations
+   - Can manage applications and job statuses
+   - Supports administrative workflows
+
+### Role Assignment
+- Admin is automatically granted Admin, Employer, and Job Manager roles
+- Employers receive the Employer role when posting a job
+- Job Managers can be explicitly granted their role by the Admin
+
+### Access Control Principles
+- Granular permission management
+- Secure role-based access
+- Flexible administrative controls
+- Transparent role assignment
+
 ## 📋 Job Posting Attributes
 - Unique job ID
 - Employer address
