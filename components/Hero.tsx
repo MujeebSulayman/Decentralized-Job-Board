@@ -56,7 +56,7 @@ const Hero = () => {
             stiffness: 100, 
             damping: 15 
           }}
-          className="text-lg text-gray-400 max-w-2xl mx-auto font-medium leading-relaxed tracking-wide"
+          className="text-[17px] text-gray-400 max-w-2xl mx-auto font-medium leading-relaxed tracking-wide"
         >
           Secure job listings with blockchain verification. 
           Post, apply, and manage jobs through smart contracts. 
@@ -76,7 +76,7 @@ const Hero = () => {
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
           <Link href="/jobs" className="w-full sm:w-auto group">
-            <button className="w-full sm:w-auto px-8 py-3.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 shadow-xl hover:shadow-green-500/50 group-hover:ring-2 group-hover:ring-green-500/50">
+            <button className="w-full sm:w-auto px-8 py-3.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 shadow-md hover:shadow-green-500/50 group-hover:ring-2 group-hover:ring-green-500/50">
               <span className="flex items-center justify-center">
                 Find job
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -87,7 +87,7 @@ const Hero = () => {
           </Link>
      
           <Link href="/post-job" className="w-full sm:w-auto group">
-            <button className="w-full sm:w-auto px-8 py-3.5 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 shadow-xl hover:shadow-gray-500/50 group-hover:ring-2 group-hover:ring-gray-500/50">
+            <button className="w-full sm:w-auto px-8 py-3.5 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-md transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 shadow-md hover:shadow-gray-500/50 group-hover:ring-2 group-hover:ring-gray-500/50">
               <span className="flex items-center justify-center">
                 Post a Job
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 group-hover:rotate-45 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
