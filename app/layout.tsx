@@ -10,9 +10,9 @@ export const metadata: Metadata = {
   description: "Hemboarding web3 jobs",
 };
 
-import { Inter } from "next/font/google";
+import { Space_Grotesk } from "next/font/google";
 
-const inter = Inter({
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   display: "swap",
   weight: ["400", "500", "600", "700"],
@@ -23,7 +23,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={spaceGrotesk.className}>
         <Providers>{children}</Providers>
         <ToastContainer
           position="top-center"

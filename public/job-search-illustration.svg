@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" fill="none">
+  <title>Job Search Illustration</title>
+  <path d="M250 50c-110.5 0-200 89.5-200 200s89.5 200 200 200 200-89.5 200-200S360.5 50 250 50z" fill="#1F2937"/>
+  
+  <g stroke="#10B981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M180 220c-22.1 0-40 17.9-40 40v60c0 22.1 17.9 40 40 40h140c22.1 0 40-17.9 40-40v-60c0-22.1-17.9-40-40-40H180z" fill="#111827"/>
+    <path d="M250 300c-11.046 0-20-8.954-20-20s8.954-20 20-20 20 8.954 20 20-8.954 20-20 20z"/>
+  </g>
+  
+  <g fill="#10B981" opacity="0.7">
+    <circle cx="150" cy="150" r="20"/>
+    <circle cx="350" cy="150" r="20"/>
+  </g>
+  
+  <path d="M100 400l50-50 50 50M400 100l-50 50-50-50" stroke="#10B981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
