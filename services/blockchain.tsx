@@ -121,7 +121,7 @@ const editJob = async (job: JobPostParams): Promise<void> => {
     return Promise.resolve(tx);
   } catch (error) {
     reportError(error);
-    Promise.reject(error);
+    return Promise.reject(error);
   }
 };
 
