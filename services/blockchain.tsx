@@ -1,7 +1,7 @@
 import address from "../contracts/contractAddress.json";
 import abi from "../artifacts/contracts/JobBoard.sol/JobBoard.json";
 import { ethers } from "ethers";
-import { error } from "console";
+import { JobPostParams } from "@/utils/type.dt";
 
 const toWei = (num: number) => ethers.parseEther(num.toString());
 
@@ -65,12 +65,64 @@ const grantEmployerRole = async (roleAddress: string): Promise<void> => {
   }
 };
 
-const postJob = async () => {
+const postJob = async (job: JobPostParams): Promise<void> => {
   if (!ethereum) {
-    reportError("Please install a wallet provider");
-    return Promise.reject(new Error("Browser Provider not found"));
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
   }
-  
+  try {
+    const contract = await getEthereumContract();
+    tx = await contract.postJob(
+      job.orgName,
+      job.title,
+      job.description,
+      job.orgEmail,
+      job.logoCID,
+      job.fieldName,
+      job.isRequired,
+      job.jobType,
+      job.workMode,
+      job.minimumSalary,
+      job.maximumSalary,
+      job.expirationDays
+    );
+    await tx.wait();
+    return Promise.resolve(tx);
+  } catch (error) {
+    reportError(error);
+    return Promise.reject(error);
+  }
 };
 
-export { updateServiceFee, grantEmployerRole };
+const editJob = async (job: JobPostParams): Promise<void> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+  try {
+    const contract = await getEthereumContract();
+    tx = await contract.editJob(
+      job.id,
+      job.orgName,
+      job.title,
+      job.description,
+      job.orgEmail,
+      job.logoCID,
+      job.fieldName,
+      job.isRequired,
+      job.jobType,
+      job.workMode,
+      job.minimumSalary,
+      job.maximumSalary
+    );
+    await tx.wait();
+    return Promise.resolve(tx);
+  } catch (error) {
+    reportError(error);
+    Promise.reject(error);
+  }
+};
+
+export { updateServiceFee, grantEmployerRole, postJob, editJob };

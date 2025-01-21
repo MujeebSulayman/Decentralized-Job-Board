@@ -24,7 +24,6 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         _grantRole(ADMIN_ROLE, msg.sender);
         _grantRole(JOB_MANAGER_ROLE, msg.sender);
         _grantRole(EMPLOYER_ROLE, msg.sender);
-        
     }
 
     mapping(uint256 => JobStruct) public jobs;
@@ -201,6 +200,7 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         string memory orgName,
         string memory title,
         string memory description,
+        string memory orgEmail,
         string memory logoCID,
         string[] memory fieldName,
         bool[] memory isRequired,
@@ -213,8 +213,8 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         require(!jobs[id].deleted, "Job has been deleted");
         require(
             hasRole(ADMIN_ROLE, msg.sender) ||
-            hasRole(EMPLOYER_ROLE, msg.sender) || 
-            hasRole(JOB_MANAGER_ROLE, msg.sender),
+                hasRole(EMPLOYER_ROLE, msg.sender) ||
+                hasRole(JOB_MANAGER_ROLE, msg.sender),
             "Not authorized to edit job"
         );
         require(bytes(orgName).length > 0, "Organisation name cannot be empty");
@@ -236,6 +236,7 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         jobs[id].orgName = orgName;
         jobs[id].title = title;
         jobs[id].description = description;
+        jobs[id].orgEmail = orgEmail;
         jobs[id].logoCID = logoCID;
         jobs[id].customField = customField;
         jobs[id].endTime = calculatedEndTime;
@@ -249,8 +250,8 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     function deleteJob(uint256 id) public {
         require(
             hasRole(ADMIN_ROLE, msg.sender) ||
-            hasRole(EMPLOYER_ROLE, msg.sender) || 
-            hasRole(JOB_MANAGER_ROLE, msg.sender),
+                hasRole(EMPLOYER_ROLE, msg.sender) ||
+                hasRole(JOB_MANAGER_ROLE, msg.sender),
             "Not authorized to delete job"
         );
         require(!jobs[id].deleted, "Job has already been deleted");
@@ -281,8 +282,8 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     function expireJob(uint256 jobId) public {
         require(
             hasRole(ADMIN_ROLE, msg.sender) ||
-            hasRole(EMPLOYER_ROLE, msg.sender) || 
-            hasRole(JOB_MANAGER_ROLE, msg.sender),
+                hasRole(EMPLOYER_ROLE, msg.sender) ||
+                hasRole(JOB_MANAGER_ROLE, msg.sender),
             "Not authorized to expire job"
         );
         require(!jobs[jobId].deleted, "Job already deleted");
@@ -362,8 +363,8 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
 
         require(
             hasRole(ADMIN_ROLE, msg.sender) ||
-            hasRole(EMPLOYER_ROLE, msg.sender) || 
-            hasRole(JOB_MANAGER_ROLE, msg.sender),
+                hasRole(EMPLOYER_ROLE, msg.sender) ||
+                hasRole(JOB_MANAGER_ROLE, msg.sender),
             "Not authorized to update application status"
         );
 
@@ -383,8 +384,8 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     function closeJob(uint256 jobId) public {
         require(
             hasRole(ADMIN_ROLE, msg.sender) ||
-            hasRole(EMPLOYER_ROLE, msg.sender) || 
-            hasRole(JOB_MANAGER_ROLE, msg.sender),
+                hasRole(EMPLOYER_ROLE, msg.sender) ||
+                hasRole(JOB_MANAGER_ROLE, msg.sender),
             "Not authorized to close job"
         );
 
@@ -445,8 +446,8 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     ) public view returns (ApplicationStruct memory) {
         require(
             hasRole(ADMIN_ROLE, msg.sender) ||
-            hasRole(EMPLOYER_ROLE, msg.sender) || 
-            hasRole(JOB_MANAGER_ROLE, msg.sender),
+                hasRole(EMPLOYER_ROLE, msg.sender) ||
+                hasRole(JOB_MANAGER_ROLE, msg.sender),
             "Not authorized to view applicant"
         );
         require(
@@ -465,8 +466,8 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     ) public view returns (uint256) {
         require(
             hasRole(ADMIN_ROLE, msg.sender) ||
-            hasRole(EMPLOYER_ROLE, msg.sender) || 
-            hasRole(JOB_MANAGER_ROLE, msg.sender),
+                hasRole(EMPLOYER_ROLE, msg.sender) ||
+                hasRole(JOB_MANAGER_ROLE, msg.sender),
             "Not authorized to view applications"
         );
         return jobApplications[jobId].length;
@@ -477,22 +478,29 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     ) public view returns (ApplicationStruct[] memory) {
         require(
             hasRole(ADMIN_ROLE, msg.sender) ||
-            hasRole(EMPLOYER_ROLE, msg.sender) || 
-            hasRole(JOB_MANAGER_ROLE, msg.sender),
+                hasRole(EMPLOYER_ROLE, msg.sender) ||
+                hasRole(JOB_MANAGER_ROLE, msg.sender),
             "Not authorized to view applications"
         );
         return jobApplications[jobId];
     }
 
-    function grantJobManagerRole(address account) external onlyRole(ADMIN_ROLE) {
+    function grantJobManagerRole(
+        address account
+    ) external onlyRole(ADMIN_ROLE) {
         grantRole(JOB_MANAGER_ROLE, account);
     }
 
-    function revokeJobManagerRole(address account) external onlyRole(ADMIN_ROLE) {
+    function revokeJobManagerRole(
+        address account
+    ) external onlyRole(ADMIN_ROLE) {
         revokeRole(JOB_MANAGER_ROLE, account);
     }
 
-    function checkRole(bytes32 role, address account) external view returns (bool) {
+    function checkRole(
+        bytes32 role,
+        address account
+    ) external view returns (bool) {
         return hasRole(role, account);
     }
 
