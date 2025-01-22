@@ -1,7 +1,12 @@
 import address from "../contracts/contractAddress.json";
-import abi from '../contracts/JobBoard.json';
+import abi from "../contracts/JobBoard.json";
 import { ethers } from "ethers";
-import { JobPostParams } from "@/utils/type.dt";
+import {
+  ApplicationState,
+  ApplicationStruct,
+  JobPostParams,
+  JobStruct,
+} from "@/utils/type.dt";
 
 const toWei = (num: number) => ethers.parseEther(num.toString());
 
@@ -125,4 +130,174 @@ const editJob = async (job: JobPostParams): Promise<void> => {
   }
 };
 
-export { updateServiceFee, grantEmployerRole, postJob, editJob };
+const deleteJob = async (jobId: number): Promise<void> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+  try {
+    const contract = await getEthereumContract();
+    tx = await contract.deleteJob(jobId);
+    await tx.wait();
+    return Promise.resolve(tx);
+  } catch (error) {
+    reportError(error);
+    return Promise.reject(error);
+  }
+};
+
+const isJobExpired = async (jobId: number): Promise<void> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+  try {
+    const contract = await getEthereumContract();
+    tx = await contract.isJobExpired(jobId);
+    await tx.wait();
+    return Promise.resolve(tx);
+  } catch (error) {
+    reportError(error);
+    return Promise.reject(error);
+  }
+};
+const checkJobExpiration = async (jobId: number): Promise<void> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+  try {
+    const contract = await getEthereumContract();
+    tx = await contract.checkJobExpiration(jobId);
+    await tx.wait();
+    return Promise.resolve(tx);
+  } catch (error) {
+    reportError(error);
+    return Promise.reject(error);
+  }
+};
+const expireJob = async (jobId: number): Promise<void> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+  try {
+    const contract = await getEthereumContract();
+    tx = await contract.expireJob(jobId);
+    await tx.wait();
+    return Promise.resolve(tx);
+  } catch (error) {
+    reportError(error);
+    return Promise.reject(error);
+  }
+};
+
+const applyForJob = async (
+  jobApplication: ApplicationStruct
+): Promise<void> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+  try {
+    const contract = await getEthereumContract();
+    tx = await contract.applyForJob(jobApplication);
+    await tx.wait();
+    return Promise.resolve(tx);
+  } catch (error) {
+    reportError(error);
+    return Promise.reject(error);
+  }
+};
+
+const updateApplicationStatus = async (
+  jobId: number,
+  applicant: string,
+  newState: ApplicationState
+) => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+  try {
+    const contract = await getEthereumContract();
+    tx = await contract.updateApplicationStatus(jobId, applicant, newState);
+    return Promise.resolve(tx);
+  } catch (error) {
+    reportError(error);
+    return Promise.reject(error);
+  }
+};
+
+const closeJob = async (jobId: number): Promise<void> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+  try {
+    const contract = await getEthereumContract();
+    tx = await contract.closeJob(jobId);
+    await tx.wait();
+    return Promise.resolve(tx);
+  } catch (error) {
+    reportError(error);
+    return Promise.reject(error);
+  }
+};
+
+const getJob = async (jobId: number): Promise<JobStruct> => {
+  const contract = await getEthereumContract();
+  tx = await contract.getJob(jobId);
+  await tx.wait();
+  return Promise.resolve(tx);
+};
+
+const getAllJobs = async (): Promise<JobStruct[]> => {
+  const contract = await getEthereumContract();
+  const jobs = await contract.getAllJobs();
+  return jobs;
+};
+
+const getMyJobs = async (): Promise<JobStruct[]> => {
+  const contract = await getEthereumContract();
+  const jobs = await contract.getMyJobs();
+  return jobs;
+};
+
+const getJobApplicants = async (
+  jobId: number
+): Promise<ApplicationStruct[]> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+  const contract = await getEthereumContract();
+  const jobApplicants = await contract.getJobApplicants(jobId);
+  return jobApplicants;
+};
+
+export {
+  updateServiceFee,
+  grantEmployerRole,
+  postJob,
+  editJob,
+  deleteJob,
+  isJobExpired,
+  checkJobExpiration,
+  expireJob,
+  applyForJob,
+  updateApplicationStatus,
+  closeJob,
+  getJob,
+  getAllJobs,
+  getMyJobs,
+  getJobApplicants,
+};
