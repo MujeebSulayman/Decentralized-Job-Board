@@ -288,6 +288,11 @@ const getJobApplicantDetails = async (
   jobId: number,
   applicant: string
 ): Promise<ApplicationStruct | null> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
   try {
     const contract = await getEthereumContract();
     const jobApplicants = await contract.getJobApplicants(jobId);
@@ -310,6 +315,51 @@ const getJobApplicantDetails = async (
   }
 };
 
+const getJobApplicationCount = async (jobId: number): Promise<number> => {
+  try {
+    const contract = await getEthereumContract();
+    const count = await contract.getJobApplicationCount(jobId);
+    return count;
+  } catch (error) {
+    console.error("Error fetching job application count:", error);
+    return 0;
+  }
+};
+
+const getJobApplications = async (
+  jobId: number
+): Promise<ApplicationStruct[]> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+  try {
+    const contract = await getEthereumContract();
+    const applications = await contract.getJobApplications(jobId);
+    return applications;
+  } catch (error) {
+    console.error("Error fetching job applications:", error);
+    return [];
+  }
+};
+
+const grantJobManagerRole = async (
+  jobId: number,
+  account: string
+): Promise<void> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+
+  const contract = await getEthereumContract();
+  const tx = await contract.grantJobManagerRole(jobId, account);
+  await tx.wait();
+  return Promise.resolve();
+};
+
 export {
   updateServiceFee,
   grantEmployerRole,
@@ -327,4 +377,7 @@ export {
   getMyJobs,
   getJobApplicants,
   getJobApplicantDetails,
+  getJobApplicationCount,
+  getJobApplications,
+  grantJobManagerRole,
 };
