@@ -344,10 +344,7 @@ const getJobApplications = async (
   }
 };
 
-const grantJobManagerRole = async (
-  jobId: number,
-  account: string
-): Promise<void> => {
+const grantJobManagerRole = async (account: string): Promise<void> => {
   if (!ethereum) {
     return Promise.reject(
       new Error("Please install MetaMask to use this application.")
@@ -355,9 +352,47 @@ const grantJobManagerRole = async (
   }
 
   const contract = await getEthereumContract();
-  const tx = await contract.grantJobManagerRole(jobId, account);
+  const tx = await contract.grantJobManagerRole(account);
+  await tx.wait();
+};
+
+const revokeJobManagerRole = async (account: string): Promise<void> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+  const contract = await getEthereumContract();
+  const tx = await contract.revokeJobManagerRole(account);
   await tx.wait();
   return Promise.resolve();
+};
+
+const checkRole = async (role: string, account: string): Promise<boolean> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+  const contract = await getEthereumContract();
+  const hasRole = await contract.hasRole(role, account);
+  return hasRole;
+};
+
+const withdrawFunds = async (): Promise<void> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+  try {
+    const contract = await getEthereumContract();
+    const tx = await contract.withdrawFunds();
+    await tx.wait();
+  } catch (error) {
+    console.error("Error withdrawing funds:", error);
+    throw error;
+  }
 };
 
 export {
@@ -380,4 +415,7 @@ export {
   getJobApplicationCount,
   getJobApplications,
   grantJobManagerRole,
+  revokeJobManagerRole,
+  checkRole,
+  withdrawFunds,
 };
