@@ -284,6 +284,32 @@ const getJobApplicants = async (
   return jobApplicants;
 };
 
+const getJobApplicantDetails = async (
+  jobId: number,
+  applicant: string
+): Promise<ApplicationStruct | null> => {
+  try {
+    const contract = await getEthereumContract();
+    const jobApplicants = await contract.getJobApplicants(jobId);
+
+    const applicantIndex = jobApplicants.findIndex(
+      (address: string) => address.toLowerCase() === applicant.toLowerCase()
+    );
+
+    if (applicantIndex === -1) return null;
+
+    const jobApplicantDetails = await contract.getJobApplicantDetails(
+      jobId,
+      applicantIndex
+    );
+
+    return jobApplicantDetails;
+  } catch (error) {
+    console.error("Error fetching job applicant details:", error);
+    return null;
+  }
+};
+
 export {
   updateServiceFee,
   grantEmployerRole,
@@ -300,4 +326,5 @@ export {
   getAllJobs,
   getMyJobs,
   getJobApplicants,
+  getJobApplicantDetails,
 };
