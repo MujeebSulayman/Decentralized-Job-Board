@@ -1,8 +1,10 @@
 import React from 'react'
 import AdminDashboardLayout from '../layouts/AdminDashboardLayout'
 
-const withAdminLayout = (WrappedComponent: React.ComponentType<any>) => {
-  return function WithAdminLayout(props: any) {
+const withAdminLayout = <P extends object>(
+  WrappedComponent: React.ComponentType<P>
+) => {
+  return function WithAdminLayout(props: P) {
     return (
       <AdminDashboardLayout>
         <WrappedComponent {...props} />

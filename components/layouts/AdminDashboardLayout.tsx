@@ -1,171 +1,106 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import clsx from 'clsx';
 import {
-  HomeIcon,
+  SparklesIcon,
+  XMarkIcon,
+  Bars3Icon,
+  DocumentCheckIcon,
+  ClockIcon,
+  DocumentPlusIcon,
+  ArrowRightStartOnRectangleIcon,
+  CodeBracketIcon,
+  UserGroupIcon,
   ChartBarIcon,
   BriefcaseIcon,
-  DocumentPlusIcon,
-  PencilSquareIcon,
-  UserGroupIcon,
-  UserPlusIcon,
-  ShieldCheckIcon,
-  CogIcon,
   CurrencyDollarIcon,
-  ExclamationTriangleIcon,
-  ArrowRightStartOnRectangleIcon,
-  Bars3Icon,
-  XMarkIcon,
-  SparklesIcon,
-  CodeBracketIcon,
-  ClockIcon,
-  DocumentCheckIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/24/solid";
-import { useAccount, useDisconnect } from "wagmi";
-import { useRouter, usePathname } from "next/navigation";
-import { toast } from "react-toastify";
-import clsx from "clsx";
-
-// Enhanced Role-Based Navigation
-enum AdminRole {
-  SUPER_ADMIN = "SUPER_ADMIN",
-  JOB_MANAGER = "JOB_MANAGER",
-  USER_MANAGER = "USER_MANAGER",
-  FINANCIAL_ADMIN = "FINANCIAL_ADMIN",
-}
 
 interface NavItem {
+  path: string;
   text: string;
   icon: React.ComponentType<{ className?: string }>;
-  path: string;
-  badge?: number;
-  group?: string;
-  requiredRoles?: AdminRole[];
+  badge?: string;
 }
 
-const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [adminRole, setAdminRole] = useState<AdminRole>(AdminRole.SUPER_ADMIN);
+interface DashboardMetrics {
+  totalJobs: number;
+  activeJobs: number;
+  expiredJobs: number;
+  pendingJobs: number;
+}
 
-  // Dashboard Metrics Inspired by Smart Contract
-  const [dashboardMetrics, setDashboardMetrics] = useState({
+const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [address, setAddress] = useState<string | null>(null);
+  const [adminRole, setAdminRole] = useState('ADMIN');
+
+  const dashboardMetrics: DashboardMetrics = {
     totalJobs: 124,
-    totalApplications: 456,
-    serviceFee: 0.05, // 5%
     activeJobs: 87,
     expiredJobs: 37,
-  });
+    pendingJobs: 12
+  };
 
-  const { address } = useAccount();
-  const { disconnect } = useDisconnect();
-  const router = useRouter();
-  const pathname = usePathname();
-
-  // Comprehensive Navigation Sections with Role-Based Access
   const navItems: NavItem[] = [
     {
-      text: "Dashboard Overview",
-      icon: HomeIcon,
-      path: "/dashboard/admin",
-      group: "Overview",
-      requiredRoles: [AdminRole.SUPER_ADMIN],
-    },
-    {
-      text: "Job Analytics",
+      path: '/dashboard/admin',
+      text: 'Dashboard',
       icon: ChartBarIcon,
-      path: "/dashboard/admin/analytics",
-      badge: 3,
-      group: "Overview",
-      requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.JOB_MANAGER],
     },
     {
-      text: "Job Dashboard",
+      path: '/dashboard/admin/jobs',
+      text: 'Jobs',
       icon: BriefcaseIcon,
-      path: "/dashboard/admin/jobs",
-      group: "Jobs Management",
-      requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.JOB_MANAGER],
     },
     {
-      text: "Post New Job",
+      path: '/dashboard/admin/jobs/create',
+      text: 'Create Job',
       icon: DocumentPlusIcon,
-      path: "/dashboard/admin/jobs/create",
-      group: "Jobs Management",
-      requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.JOB_MANAGER],
     },
     {
-      text: "Manage Jobs",
-      icon: PencilSquareIcon,
-      path: "/dashboard/admin/jobs/manage",
-      group: "Jobs Management",
-      requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.JOB_MANAGER],
-    },
-    {
-      text: "User List",
+      path: '/dashboard/admin/users',
+      text: 'Users',
       icon: UserGroupIcon,
-      path: "/dashboard/admin/users",
-      group: "User Management",
-      requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.USER_MANAGER],
     },
     {
-      text: "Add User",
-      icon: UserPlusIcon,
-      path: "/dashboard/admin/users/create",
-      group: "User Management",
-      requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.USER_MANAGER],
-    },
-    {
-      text: "Role Management",
-      icon: ShieldCheckIcon,
-      path: "/dashboard/admin/users/roles",
-      group: "User Management",
-      requiredRoles: [AdminRole.SUPER_ADMIN],
-    },
-    {
-      text: "Financial Settings",
+      path: '/dashboard/admin/payments',
+      text: 'Payments',
       icon: CurrencyDollarIcon,
-      path: "/dashboard/admin/settings/financial",
-      group: "Configuration",
-      requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.FINANCIAL_ADMIN],
     },
     {
-      text: "System Health",
-      icon: ExclamationTriangleIcon,
-      path: "/dashboard/admin/system-health",
-      badge: 2,
-      group: "Configuration",
-      requiredRoles: [AdminRole.SUPER_ADMIN],
+      path: '/dashboard/admin/verification',
+      text: 'Verification',
+      icon: DocumentCheckIcon,
+    },
+    {
+      path: '/dashboard/admin/compliance',
+      text: 'Compliance',
+      icon: ShieldCheckIcon,
     },
   ];
 
+  const groupedNavItems = navItems.reduce((acc, item) => {
+    const group = item.path.split('/')[3] || 'General';
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(item);
+    return acc;
+  }, {} as Record<string, NavItem[]>);
+
   const handleNavigation = (path: string) => {
     router.push(path);
-    setMobileOpen(false);
   };
 
   const handleLogout = () => {
-    disconnect();
-    toast.success("Logged out successfully", {
-      theme: "dark",
-      position: "bottom-right",
-    });
-    router.push("/");
+    // Implement logout logic
+    router.push('/');
   };
-
-  // Filter navigation based on admin role
-  const filteredNavItems = navItems.filter(
-    (item) => !item.requiredRoles || item.requiredRoles.includes(adminRole)
-  );
-
-  // Group navigation items
-  const groupedNavItems = filteredNavItems.reduce((acc, item) => {
-    if (!acc[item.group!]) {
-      acc[item.group!] = [];
-    }
-    acc[item.group!].push(item);
-    return acc;
-  }, {} as Record<string, NavItem[]>);
 
   const Sidebar = () => (
     <div className="bg-black/90 text-white w-64 h-full flex flex-col 
@@ -201,12 +136,6 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({
           </div>
         </div>
         <div className="bg-gray-800/30 p-2 rounded-lg text-center hover:bg-gray-800/50 transition-all">
-          <div className="text-xs text-gray-400">Applications</div>
-          <div className="text-lg font-bold text-white">
-            {dashboardMetrics.totalApplications}
-          </div>
-        </div>
-        <div className="bg-gray-800/30 p-2 rounded-lg text-center hover:bg-gray-800/50 transition-all">
           <div className="text-xs text-gray-400">Active Jobs</div>
           <div className="text-lg font-bold text-green-500 flex items-center justify-center">
             <DocumentCheckIcon className="h-4 w-4 mr-1" />
@@ -218,6 +147,13 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({
           <div className="text-lg font-bold text-red-500 flex items-center justify-center">
             <ClockIcon className="h-4 w-4 mr-1" />
             {dashboardMetrics.expiredJobs}
+          </div>
+        </div>
+        <div className="bg-gray-800/30 p-2 rounded-lg text-center hover:bg-gray-800/50 transition-all">
+          <div className="text-xs text-gray-400">Pending Jobs</div>
+          <div className="text-lg font-bold text-yellow-500 flex items-center justify-center">
+            <DocumentPlusIcon className="h-4 w-4 mr-1" />
+            {dashboardMetrics.pendingJobs}
           </div>
         </div>
       </div>
