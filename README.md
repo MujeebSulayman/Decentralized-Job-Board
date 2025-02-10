@@ -49,6 +49,38 @@ HemBoard implements a comprehensive role-based access control system with three 
    - Can manage applications and job statuses
    - Supports administrative workflows
 
+### Admin Capabilities
+
+Admins have comprehensive platform management capabilities:
+
+#### Job Management
+- **Create Jobs**: Post jobs for any employer
+- **Edit Jobs**: Modify any job listing
+- **Delete Jobs**: Remove job listings
+- **Expire Jobs**: Set job listings as expired
+- **Close Jobs**: Terminate active job postings
+
+#### Role Management
+- **Grant Roles**: Assign Job Manager and Employer roles
+- **Revoke Roles**: Remove user roles
+- **Role Verification**: Check user role permissions
+
+#### Application Management
+- **Update Application Status**: Modify applicant status
+- **View Applicants**: Access detailed applicant information
+- **Manage Applications**: Track and control job applications
+
+#### Platform Configuration
+- **Service Fee Management**: Update platform transaction fees
+- **Funds Withdrawal**: Manage platform-accumulated funds
+- **Job Monitoring**: Full visibility into all job listings
+
+#### Key Authorization Mechanisms
+- Role-based access control
+- Granular permission settings
+- Secure transaction validation
+- Transparent administrative actions
+
 ### Role Assignment
 - Admin is automatically granted Admin, Employer, and Job Manager roles
 - Employers receive the Employer role when posting a job

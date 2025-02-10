@@ -148,12 +148,25 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         string memory maximumSalary,
         uint256 expirationDays
     ) public payable nonReentrant returns (uint256) {
+        // Authorization check for job posting
+        require(
+            msg.sender == tx.origin || 
+            hasRole(ADMIN_ROLE, msg.sender) || 
+            hasRole(JOB_MANAGER_ROLE, msg.sender), 
+            "Unauthorized to post job"
+        );
+
         require(msg.value >= serviceFee, "Insufficient fund");
         require(expirationDays > 0, "Expiration days must be greater than 0");
         require(bytes(orgName).length > 0, "Organisation name cannot be empty");
         require(bytes(title).length > 0, "Title cannot be empty");
         require(bytes(description).length > 0, "Description cannot be empty");
         require(bytes(logoCID).length > 0, "Logo cannot be empty");
+
+        // Determine the employer
+        address jobEmployer = hasRole(ADMIN_ROLE, msg.sender) || hasRole(JOB_MANAGER_ROLE, msg.sender) 
+            ? tx.origin  // Use original transaction sender as employer
+            : msg.sender;
 
         CustomField[] memory customField = new CustomField[](fieldName.length);
         for (uint i = 0; i < fieldName.length; i++) {
@@ -168,7 +181,7 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
 
         jobs[currentJobId] = JobStruct({
             id: currentJobId,
-            employer: msg.sender,
+            employer: jobEmployer,
             title: title,
             orgName: orgName,
             description: description,
@@ -187,11 +200,11 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
             maximumSalary: maximumSalary
         });
 
-        employerJobs[msg.sender].push(currentJobId);
+        employerJobs[jobEmployer].push(currentJobId);
 
-        _grantEmployerRole(msg.sender);
+        _grantEmployerRole(jobEmployer);
 
-        emit JobPosted(currentJobId, msg.sender, title, orgName);
+        emit JobPosted(currentJobId, jobEmployer, title, orgName);
         return currentJobId;
     }
 
@@ -210,13 +223,15 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         string memory minimumSalary,
         string memory maximumSalary
     ) public nonReentrant {
-        require(!jobs[id].deleted, "Job has been deleted");
+        // Authorization check for job editing
         require(
-            hasRole(ADMIN_ROLE, msg.sender) ||
-                hasRole(EMPLOYER_ROLE, msg.sender) ||
-                hasRole(JOB_MANAGER_ROLE, msg.sender),
-            "Not authorized to edit job"
+            msg.sender == jobs[id].employer || 
+            hasRole(ADMIN_ROLE, msg.sender) || 
+            hasRole(JOB_MANAGER_ROLE, msg.sender), 
+            "Unauthorized to edit job"
         );
+
+        require(!jobs[id].deleted, "Job has been deleted");
         require(bytes(orgName).length > 0, "Organisation name cannot be empty");
         require(bytes(title).length > 0, "Title cannot be empty");
         require(bytes(description).length > 0, "Description cannot be empty");
@@ -248,12 +263,14 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     }
 
     function deleteJob(uint256 id) public {
+        // Authorization check for job deletion
         require(
-            hasRole(ADMIN_ROLE, msg.sender) ||
-                hasRole(EMPLOYER_ROLE, msg.sender) ||
-                hasRole(JOB_MANAGER_ROLE, msg.sender),
-            "Not authorized to delete job"
+            msg.sender == jobs[id].employer || 
+            hasRole(ADMIN_ROLE, msg.sender) || 
+            hasRole(JOB_MANAGER_ROLE, msg.sender), 
+            "Unauthorized to delete job"
         );
+
         require(!jobs[id].deleted, "Job has already been deleted");
 
         jobs[id].deleted = true;
