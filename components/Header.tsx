@@ -160,7 +160,7 @@ const Header: React.FC = () => {
 											Job Applications
 										</NavLink>
 										<NavLink
-											href='/dashboard/admin'
+											href='/dashboard'
 											mobile>
 											Admin Dashboard
 										</NavLink>

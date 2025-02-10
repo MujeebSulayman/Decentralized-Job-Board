@@ -49,6 +49,7 @@
     "hardhat-gas-reporter": "^1.0.8",
     "postcss": "^8",
     "solidity-coverage": "^0.8.1",
+    "tailwind-scrollbar": "^4.0.0",
     "tailwindcss": "^3.4.1",
     "ts-node": ">=8.0.0",
     "typechain": "^8.3.0",
