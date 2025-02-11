@@ -344,41 +344,6 @@ const getJobApplications = async (
   }
 };
 
-const grantJobManagerRole = async (account: string): Promise<void> => {
-  if (!ethereum) {
-    return Promise.reject(
-      new Error("Please install MetaMask to use this application.")
-    );
-  }
-
-  const contract = await getEthereumContract();
-  const tx = await contract.grantJobManagerRole(account);
-  await tx.wait();
-};
-
-const revokeJobManagerRole = async (account: string): Promise<void> => {
-  if (!ethereum) {
-    return Promise.reject(
-      new Error("Please install MetaMask to use this application.")
-    );
-  }
-  const contract = await getEthereumContract();
-  const tx = await contract.revokeJobManagerRole(account);
-  await tx.wait();
-  return Promise.resolve();
-};
-
-const checkRole = async (role: string, account: string): Promise<boolean> => {
-  if (!ethereum) {
-    return Promise.reject(
-      new Error("Please install MetaMask to use this application.")
-    );
-  }
-  const contract = await getEthereumContract();
-  const hasRole = await contract.hasRole(role, account);
-  return hasRole;
-};
-
 const withdrawFunds = async (): Promise<void> => {
   if (!ethereum) {
     return Promise.reject(
@@ -397,7 +362,6 @@ const withdrawFunds = async (): Promise<void> => {
 
 export {
   updateServiceFee,
-  grantEmployerRole,
   postJob,
   editJob,
   deleteJob,
@@ -414,8 +378,6 @@ export {
   getJobApplicantDetails,
   getJobApplicationCount,
   getJobApplications,
-  grantJobManagerRole,
-  revokeJobManagerRole,
-  checkRole,
   withdrawFunds,
+  grantEmployerRole
 };
