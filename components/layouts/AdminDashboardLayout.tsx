@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import clsx from 'clsx';
+import React, { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import clsx from "clsx";
 import {
   SparklesIcon,
   XMarkIcon,
@@ -33,61 +33,63 @@ interface DashboardMetrics {
   pendingJobs: number;
 }
 
-const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const pathname = usePathname();
   const router = useRouter();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [address, setAddress] = useState<string | null>(null);
-  const [adminRole, setAdminRole] = useState('ADMIN');
+  const [adminRole, setAdminRole] = useState("ADMIN");
 
   const dashboardMetrics: DashboardMetrics = {
     totalJobs: 124,
     activeJobs: 87,
     expiredJobs: 37,
-    pendingJobs: 12
+    pendingJobs: 12,
   };
 
   const navItems: NavItem[] = [
     {
-      path: '/dashboard/admin',
-      text: 'Dashboard',
+      path: "/dashboard/admin",
+      text: "Dashboard",
       icon: ChartBarIcon,
     },
     {
-      path: '/dashboard/admin/jobs',
-      text: 'Jobs',
+      path: "/dashboard/admin/jobs",
+      text: "Jobs",
       icon: BriefcaseIcon,
     },
     {
-      path: '/dashboard/admin/jobs/create',
-      text: 'Create Job',
+      path: "/dashboard/admin/jobs/create",
+      text: "Create Job",
       icon: DocumentPlusIcon,
     },
     {
-      path: '/dashboard/admin/users',
-      text: 'Users',
+      path: "/dashboard/admin/users",
+      text: "Users",
       icon: UserGroupIcon,
     },
     {
-      path: '/dashboard/admin/payments',
-      text: 'Payments',
+      path: "/dashboard/admin/payments",
+      text: "Payments",
       icon: CurrencyDollarIcon,
     },
     {
-      path: '/dashboard/admin/verification',
-      text: 'Verification',
+      path: "/dashboard/admin/verification",
+      text: "Verification",
       icon: DocumentCheckIcon,
     },
     {
-      path: '/dashboard/admin/compliance',
-      text: 'Compliance',
+      path: "/dashboard/admin/compliance",
+      text: "Compliance",
       icon: ShieldCheckIcon,
     },
   ];
 
   const groupedNavItems = navItems.reduce((acc, item) => {
-    const group = item.path.split('/')[3] || 'General';
+    const group = item.path.split("/")[3] || "General";
     if (!acc[group]) acc[group] = [];
     acc[group].push(item);
     return acc;
@@ -99,18 +101,20 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const handleLogout = () => {
     // Implement logout logic
-    router.push('/');
+    router.push("/");
   };
 
   const Sidebar = () => (
-    <div className="bg-black/90 text-white w-64 h-full flex flex-col 
+    <div
+      className="bg-black/90 text-white w-64 h-full flex flex-col 
       overflow-y-auto 
       scrollbar-thin 
       scrollbar-track-gray-800 
       scrollbar-thumb-green-100 
       hover:scrollbar-thumb-green-100 
       scrollbar-thumb-rounded-full
-      border-r border-gray-800/30">
+      border-r border-gray-800/30"
+    >
       {/* Header (Fixed) */}
       <div className="px-6 py-4 border-b border-gray-800/30 flex items-center justify-between">
         <div className="flex items-center">
@@ -119,8 +123,8 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ childre
             HemBoard
           </span>
         </div>
-        <button 
-          onClick={() => setMobileOpen(false)} 
+        <button
+          onClick={() => setMobileOpen(false)}
           className="lg:hidden text-gray-300 hover:text-white"
         >
           <XMarkIcon className="h-6 w-6" />
@@ -173,8 +177,8 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ childre
                       onClick={() => handleNavigation(item.path)}
                       className={clsx(
                         "w-full flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 text-left",
-                        pathname === item.path 
-                          ? "bg-green-500/20 text-green-400" 
+                        pathname === item.path
+                          ? "bg-green-500/20 text-green-400"
                           : "text-gray-300 hover:bg-gray-800/30 hover:text-white",
                         "group relative"
                       )}
@@ -216,10 +220,10 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ childre
               : "Not Connected"}
           </div>
           <div className="text-xs text-gray-400">
-            {adminRole.replace('_', ' ')}
+            {adminRole.replace("_", " ")}
           </div>
         </div>
-        <button 
+        <button
           onClick={handleLogout}
           className="text-gray-400 hover:text-red-500 transition-colors"
           title="Logout"
@@ -235,7 +239,7 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ childre
       {/* Mobile Sidebar */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div 
+          <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
             aria-hidden="true"
@@ -260,8 +264,8 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({ childre
         {/* Mobile Header */}
         <div className="lg:hidden">
           <div className="bg-black/90 py-2 px-4 flex items-center justify-between sm:px-6 lg:px-8 border-b border-gray-800/30">
-            <button 
-              onClick={() => setMobileOpen(true)} 
+            <button
+              onClick={() => setMobileOpen(true)}
               className="text-gray-300 hover:text-white"
             >
               <Bars3Icon className="h-6 w-6" />
