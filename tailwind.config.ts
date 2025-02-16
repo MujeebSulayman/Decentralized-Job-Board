@@ -1,5 +1,4 @@
 import type { Config } from "tailwindcss";
-import tailwindScrollbar from 'tailwind-scrollbar';
 
 export default {
   content: [
@@ -25,17 +24,10 @@ export default {
           900: '#4c1d95',
         },
       },
-      scrollbar: {
-        thin: '4px',
-        track: 'gray-800',
-        thumb: 'purple-100',
-      },
       backgroundImage: {
         'scrollbar-gradient': 'linear-gradient(to right, #8b5cf6, #6d28d9)',
       }
     },
   },
-  plugins: [
-    tailwindScrollbar({ nocompatible: true }),
-  ],
+  plugins: [],
 } satisfies Config;

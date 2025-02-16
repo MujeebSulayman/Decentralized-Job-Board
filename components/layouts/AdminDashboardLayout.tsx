@@ -106,14 +106,12 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({
 
   const Sidebar = () => (
     <div
-      className="bg-black/90 text-white w-64 h-full flex flex-col 
-      overflow-y-auto 
-      scrollbar-thin 
-      scrollbar-track-gray-800 
-      scrollbar-thumb-green-100 
-      hover:scrollbar-thumb-green-100 
-      scrollbar-thumb-rounded-full
-      border-r border-gray-800/30"
+      className={clsx(
+        "fixed inset-y-0 z-50 flex w-72 flex-col custom-scrollbar scrollbar-dark",
+        "transform transition-transform duration-300",
+        mobileOpen ? "translate-x-0" : "-translate-x-full",
+        "lg:relative lg:translate-x-0"
+      )}
     >
       {/* Header (Fixed) */}
       <div className="px-6 py-4 border-b border-gray-800/30 flex items-center justify-between">
@@ -235,7 +233,7 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({
   );
 
   return (
-    <div className="flex min-h-screen bg-black/95 text-white">
+    <div className="flex h-screen bg-black">
       {/* Mobile Sidebar */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
@@ -280,10 +278,12 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({
         </div>
 
         {/* Main Content */}
-        <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none bg-black/90">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              {children}
+        <main className="flex-1 overflow-hidden">
+          <div className="h-full custom-scrollbar">
+            <div className="py-6">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                {children}
+              </div>
             </div>
           </div>
         </main>

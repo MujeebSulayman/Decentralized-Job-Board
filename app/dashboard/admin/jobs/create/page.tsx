@@ -1,738 +1,704 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { postJob } from "@/services/blockchain";
-import { JobType, WorkMode } from "@/utils/type.dt";
-import AdminDashboardLayout from "@/components/layouts/AdminDashboardLayout";
 import { toast } from "react-toastify";
-import { 
-  CubeTransparentIcon, 
-  PlusCircleIcon, 
-  TrashIcon, 
-  CheckCircleIcon,
-  PhotoIcon,
-  SparklesIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon
-} from "@heroicons/react/24/solid";
-import { uploadToIPFS, validateFileForUpload } from "@/utils/ipfsUpload";
+import { JobType, WorkMode } from "@/utils/type.dt";
+import { uploadToIPFS } from "@/utils/ipfsUpload";
+import { postJob } from "@/services/blockchain";
+import Image from "next/image";
+import withAdminLayout from "@/components/hoc/withAdminLayout";
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Link from '@tiptap/extension-link';
+import Underline from '@tiptap/extension-underline';
+import TextAlign from '@tiptap/extension-text-align';
+import Placeholder from '@tiptap/extension-placeholder';
 
-const CreateJobPage: React.FC = () => {
+interface CustomFieldState {
+  fieldName: string;
+  isRequired: boolean;
+}
+
+const CreateJobPage = () => {
   const router = useRouter();
-  const logoInputRef = useRef<HTMLInputElement>(null);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [logoPreview, setLogoPreview] = useState<string>("");
   const [formData, setFormData] = useState({
     orgName: "",
     title: "",
     description: "",
     orgEmail: "",
-    logoCID: "",
-    fieldName: [""],
-    isRequired: [false],
-    jobType: JobType.FullTime,
-    workMode: WorkMode.Remote,
+    logo: "",
     minimumSalary: "",
     maximumSalary: "",
     expirationDays: 30,
+    jobType: JobType.FullTime,
+    workMode: WorkMode.Remote,
+    customFields: [] as { fieldName: string; isRequired: boolean }[]
   });
 
-  // Framer Motion Variants
-  const containerVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { 
-        delayChildren: 0.2,
-        staggerChildren: 0.1 
-      }
-    }
-  };
+  const [customFields, setCustomFields] = useState<CustomFieldState[]>([
+    { fieldName: "", isRequired: false },
+  ]);
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.5 }
-    }
-  };
-
-  const [activeSection, setActiveSection] = useState<
-    | 'jobDetails'
-    | 'companyInfo'
-    | 'customFields'
-    | 'salaryDetails'
-  >('jobDetails');
-
-  const sectionVariants = {
-    hidden: { opacity: 0, x: -50 },
-    visible: { 
-      opacity: 1, 
-      x: 0,
-      transition: { 
-        type: 'spring', 
-        stiffness: 100 
-      } 
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Link.configure({
+        openOnClick: false,
+      }),
+      Underline,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Placeholder.configure({
+        placeholder: 'Write a detailed job description...',
+      }),
+    ],
+    content: '',
+    onUpdate: ({ editor }) => {
+      setFormData(prev => ({
+        ...prev,
+        description: editor.getHTML()
+      }));
     },
-    exit: { opacity: 0, x: 50 }
+  });
+
+  const inputClassName = "w-full px-4 py-3 bg-black/20 border border-purple-500/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-transparent transition-all duration-200 font-dm-sans placeholder:text-gray-500";
+
+  const labelClassName = "block text-sm font-medium text-gray-200 mb-2 font-dm-sans";
+
+  const selectWrapperClassName = "relative";
+  const selectIconClassName = "absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-purple-400";
+  const optionClassName = "px-4 py-2 text-gray-300 bg-black/90 hover:bg-purple-500/20 cursor-pointer";
+  const selectClassName = "w-full px-4 py-3 bg-black/20 border border-purple-500/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-transparent transition-all duration-200 font-dm-sans text-gray-300 appearance-none";
+
+  const formGroupClassName = "space-y-2 relative group";
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('File size must be less than 5MB');
+        return;
+      }
+
+      setIsUploading(true);
+      setUploadProgress(0);
+
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Upload to IPFS
+      const { cid } = await uploadToIPFS(file);
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      // Update form with IPFS URL
+      setFormData(prev => ({
+        ...prev,
+        logo: `https://ipfs.io/ipfs/${cid}`
+      }));
+
+      toast.success('Logo uploaded successfully');
+    } catch (error) {
+      toast.error('Error uploading logo: ' + (error as Error).message);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
   };
 
-  const renderSectionHeader = (
-    title: string, 
-    description: string, 
-    icon: React.ReactNode
-  ) => (
-    <motion.div 
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex items-center space-x-4 mb-6 bg-gray-800/50 p-4 rounded-xl"
-    >
-      <div className="text-purple-400">{icon}</div>
-      <div>
-        <h2 className="text-xl font-bold text-white">{title}</h2>
-        <p className="text-gray-400 text-sm">{description}</p>
-      </div>
-    </motion.div>
-  );
+  const handleAddCustomField = () => {
+    setCustomFields((prev) => [...prev, { fieldName: "", isRequired: false }]);
+  };
 
-  const renderProgressIndicator = () => (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="flex space-x-2 mb-6"
-    >
-      {['jobDetails', 'companyInfo', 'customFields', 'salaryDetails'].map((section, index) => (
-        <motion.div
-          key={section}
-          className={`h-2 rounded-full transition-all duration-300 ${
-            activeSection === section 
-              ? 'bg-purple-500 w-12' 
-              : 'bg-gray-700 w-6'
-          }`}
-          whileHover={{ scale: 1.1 }}
-          onClick={() => setActiveSection(section as any)}
-        />
-      ))}
-    </motion.div>
-  );
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+  const handleRemoveCustomField = (index: number) => {
+    setCustomFields((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleCustomFieldChange = (
     index: number,
-    e: React.ChangeEvent<HTMLInputElement>
+    field: keyof CustomFieldState,
+    value: string | boolean
   ) => {
-    const { name, value, type, checked } = e.target;
-    const newFieldName = [...formData.fieldName];
-    const newIsRequired = [...formData.isRequired];
-
-    if (name === "fieldName") {
-      newFieldName[index] = value;
-    } else if (name === "isRequired") {
-      newIsRequired[index] = type === "checkbox" ? checked : false;
-    }
-
-    setFormData((prevData) => ({
-      ...prevData,
-      fieldName: newFieldName,
-      isRequired: newIsRequired,
-    }));
+    setCustomFields((prev) =>
+      prev.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      )
+    );
   };
 
-  const addCustomField = () => {
-    if (formData.fieldName.length < 5) {  // Limit custom fields
-      setFormData((prevData) => ({
-        ...prevData,
-        fieldName: [...prevData.fieldName, ""],
-        isRequired: [...prevData.isRequired, false],
-      }));
-    } else {
-      toast.warn("Maximum 5 custom fields allowed");
+  const handleExpirationChange = (value: string) => {
+    const days = parseInt(value);
+    if (days > 45) {
+      toast.warning("Maximum allowed posting duration is 45 days");
     }
+    setFormData((prev) => ({ ...prev, expirationDays: Math.min(45, days) }));
   };
 
-  const removeCustomField = (index: number) => {
-    const newFieldName = formData.fieldName.filter((_, i) => i !== index);
-    const newIsRequired = formData.isRequired.filter((_, i) => i !== index);
-
-    setFormData((prevData) => ({
-      ...prevData,
-      fieldName: newFieldName,
-      isRequired: newIsRequired,
-    }));
-  };
-
-  const validateForm = () => {
-    const {
-      orgName,
-      title,
-      description,
-      orgEmail,
-      minimumSalary,
-      maximumSalary,
-      logoCID,
-      expirationDays
-    } = formData;
-
-    // Comprehensive validation matching contract requirements
-    if (!orgName.trim()) {
-      toast.error("Organisation name cannot be empty");
-      return false;
-    }
-
-    if (!title.trim()) {
-      toast.error("Title cannot be empty");
-      return false;
-    }
-
-    if (!description.trim()) {
-      toast.error("Description cannot be empty");
-      return false;
-    }
-
-    if (!orgEmail.trim() || !orgEmail.includes("@")) {
-      toast.error("Valid Organisation Email is required");
-      return false;
-    }
-
-    if (!minimumSalary.trim()) {
-      toast.error("Minimum Salary is required");
-      return false;
-    }
-
-    if (!maximumSalary.trim()) {
-      toast.error("Maximum Salary is required");
-      return false;
-    }
-
-    if (!logoCID.trim()) {
-      toast.error("Logo cannot be empty");
-      return false;
-    }
-
-    if (expirationDays <= 0 || expirationDays > 90) {
-      toast.error("Expiration days must be between 1 and 90");
-      return false;
-    }
-
-    return true;
-  };
-
-  const removeLogoPreview = () => {
-    setLogoFile(null);
-    setLogoPreview(null);
-    if (logoInputRef.current) {
-      logoInputRef.current.value = ''; // Reset file input
-    }
-  };
-
-  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    if (!file) return;
-
     try {
-      // Validate file
-      validateFileForUpload(file);
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-
-      // Set file
-      setLogoFile(file);
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      }
-    }
-  };
-
-  const uploadLogo = async () => {
-    if (!logoFile) {
-      toast.error('Please select a logo first');
-      return null;
-    }
-
-    try {
-      setIsUploading(true);
-      const { cid } = await uploadToIPFS(logoFile);
+      // Form validation
+      if (!formData.orgName.trim()) throw new Error("Organization name is required");
+      if (!formData.title.trim()) throw new Error("Job title is required");
+      if (!formData.description.trim()) throw new Error("Job description is required");
+      if (!formData.orgEmail.trim()) throw new Error("Organization email is required");
+      if (!formData.logo) throw new Error("Company logo is required");
+      if (!formData.minimumSalary.trim()) throw new Error("Minimum salary is required");
+      if (!formData.maximumSalary.trim()) throw new Error("Maximum salary is required");
       
-      toast.success('Logo uploaded successfully');
-      return cid;
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(`Logo upload failed: ${error.message}`);
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.orgEmail)) {
+        throw new Error("Please enter a valid email address");
       }
-      return null;
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+      setIsLoading(true);
 
-    if (!validateForm()) return;
+      // Prepare job post parameters
+      const jobParams = {
+        orgName: formData.orgName,
+        title: formData.title,
+        description: formData.description,
+        orgEmail: formData.orgEmail,
+        logoCID: formData.logo,
+        fieldName: formData.customFields.map(field => field.fieldName),
+        isRequired: formData.customFields.map(field => field.isRequired),
+        jobType: formData.jobType,
+        workMode: formData.workMode,
+        minimumSalary: formData.minimumSalary,
+        maximumSalary: formData.maximumSalary,
+        expirationDays: formData.expirationDays
+      };
 
-    // Upload logo first
-    const logoCID = await uploadLogo();
-
-    if (!logoCID) {
-      return; // Stop submission if logo upload fails
-    }
-
-    try {
-      await postJob({ 
-        ...formData, 
-        logoCID 
-      });
-      toast.success("Job Posted Successfully!");
+      await postJob(jobParams);
+      toast.success("Job posted successfully!");
       router.push("/dashboard/admin/jobs");
     } catch (error) {
-      console.error("Job Posting Error:", error);
-      toast.error("Failed to Post Job. Please try again.");
+      toast.error(error instanceof Error ? error.message : "Failed to post job");
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const MenuBar = ({ editor }: { editor: any }) => {
+    if (!editor) {
+      return null;
+    }
+
+    return (
+      <div className="flex flex-wrap gap-2 p-2 bg-black/40 border border-purple-500/20 rounded-t-lg">
+        <button
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          disabled={!editor.can().chain().focus().toggleBold().run()}
+          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${
+            editor.isActive('bold') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
+          }`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 12h8a4 4 0 100-8H6v8zm0 0h8a4 4 0 110 8H6v-8z" />
+          </svg>
+        </button>
+
+        <button
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          disabled={!editor.can().chain().focus().toggleItalic().run()}
+          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${
+            editor.isActive('italic') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
+          }`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l-4 4M6 16l4-4" />
+          </svg>
+        </button>
+
+        <button
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${
+            editor.isActive('underline') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
+          }`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M7 20h10" />
+          </svg>
+        </button>
+
+        <div className="w-px h-6 bg-gray-700 mx-1" />
+
+        <button
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${
+            editor.isActive('bulletList') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
+          }`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
+        <button
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${
+            editor.isActive('orderedList') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
+          }`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h12M7 12h12M7 17h12M3 7h.01M3 12h.01M3 17h.01" />
+          </svg>
+        </button>
+
+        <div className="w-px h-6 bg-gray-700 mx-1" />
+
+        <button
+          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${
+            editor.isActive({ textAlign: 'left' }) ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
+          }`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h10M4 18h14" />
+          </svg>
+        </button>
+
+        <button
+          onClick={() => editor.chain().focus().setTextAlign('center').run()}
+          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${
+            editor.isActive({ textAlign: 'center' }) ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
+          }`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M7 12h10M6 18h12" />
+          </svg>
+        </button>
+      </div>
+    );
   };
 
   return (
-    <AdminDashboardLayout>
-      <motion.div 
-        initial="hidden"
-        animate="visible"
-        variants={containerVariants}
-        className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-8"
-      >
-        <motion.div 
-          variants={itemVariants}
-          className="max-w-6xl mx-auto bg-gray-800/60 backdrop-blur-lg rounded-2xl shadow-2xl p-10"
-        >
-          <motion.h1 
-            variants={itemVariants}
-            className="text-4xl font-bold mb-8 text-center flex items-center justify-center"
-          >
-            <SparklesIcon className="w-10 h-10 mr-4 text-purple-500" />
-            Create Web3 Job Listing
-          </motion.h1>
+    <div className="min-h-screen bg-black">
+      <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <div className="bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-purple-500/20">
+          {/* Header */}
+          <div className="px-8 py-6 bg-gradient-to-r from-purple-900/50 to-purple-800/30 border-b border-purple-500/20">
+            <h1 className="text-2xl font-bold text-white font-orbitron">Create New Job Posting</h1>
+            <p className="mt-1 text-purple-200 font-dm-sans">Fill in the details below to create a new job opportunity</p>
+          </div>
 
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex justify-center mb-8"
-          >
-            {renderProgressIndicator()}
-          </motion.div>
-
-          <AnimatePresence>
-            {activeSection === 'jobDetails' && (
-              <motion.div 
-                key="jobDetails"
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                variants={sectionVariants}
-                className="space-y-6"
-              >
-                {renderSectionHeader('Job Details', 'Enter job title, description and other details', <CubeTransparentIcon className="w-6 h-6" />)}
-
-                {/* Job Details */}
-                <motion.div variants={itemVariants}>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Job Title
+          <form onSubmit={handleSubmit} className="p-8 space-y-8">
+            {/* Logo Upload Section */}
+            <div className="p-6 bg-gray-800/50 rounded-xl border border-purple-500/20">
+              <label className="block text-sm font-semibold text-purple-200 mb-4">Company Logo</label>
+              <div className="flex items-center space-x-6">
+                {logoPreview ? (
+                  <div className="relative w-24 h-24 rounded-xl overflow-hidden ring-2 ring-purple-500/30">
+                    <Image
+                      src={logoPreview}
+                      alt="Logo preview"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 rounded-xl bg-gray-800 border border-purple-500/20 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                    id="logo-upload"
+                    disabled={isUploading}
+                  />
+                  <label
+                    htmlFor="logo-upload"
+                    className={`flex items-center justify-center w-full px-4 py-3 bg-black/20 border border-purple-500/20 rounded-lg hover:bg-purple-500/10 transition-all duration-200 cursor-pointer group ${
+                      isUploading ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {isUploading ? (
+                      <div className="flex items-center space-x-2">
+                        <svg className="animate-spin h-5 w-5 text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-purple-400">Uploading... {uploadProgress}%</span>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="mr-2">
+                          <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </span>
+                        <span className="text-gray-300 group-hover:text-purple-400 transition-colors duration-200">
+                          {formData.logo ? 'Change Logo' : 'Upload Logo'}
+                        </span>
+                      </>
+                    )}
                   </label>
+
+                  {/* Upload Progress Bar */}
+                  {isUploading && (
+                    <div className="mt-2">
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-purple-500 rounded-full h-2 transition-all duration-200"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Preview */}
+                  {formData.logo && !isUploading && (
+                    <div className="mt-2 flex items-center space-x-2 p-2 bg-black/40 rounded-lg border border-purple-500/20">
+                      <img
+                        src={formData.logo}
+                        alt="Company Logo"
+                        className="w-10 h-10 rounded-lg object-cover"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-300 truncate">Logo uploaded successfully</p>
+                        <p className="text-xs text-gray-500 truncate">{formData.logo}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, logo: '' }))}
+                        className="p-1 text-gray-400 hover:text-red-400 transition-colors duration-200"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Basic Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                <div className={formGroupClassName}>
+                  <label htmlFor="orgName" className={labelClassName}>Organization Name</label>
                   <input
                     type="text"
-                    name="title"
+                    id="orgName"
+                    className={inputClassName}
+                    value={formData.orgName}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, orgName: e.target.value }))}
+                    required
+                  />
+                </div>
+
+                <div className={formGroupClassName}>
+                  <label htmlFor="title" className={labelClassName}>Job Title</label>
+                  <input
+                    type="text"
+                    id="title"
+                    className={inputClassName}
                     value={formData.title}
-                    onChange={handleInputChange}
-                    className="w-full bg-gray-700 border-2 border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-purple-500 transition-all duration-300"
-                    placeholder="Enter job title"
+                    onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
                     required
                   />
-                </motion.div>
+                </div>
+              </div>
 
-                <motion.div variants={itemVariants}>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Job Description
+              <div className="space-y-6">
+                <div className={formGroupClassName}>
+                  <label htmlFor="orgEmail" className={labelClassName}>Organization Email</label>
+                  <input
+                    type="email"
+                    id="orgEmail"
+                    className={inputClassName}
+                    value={formData.orgEmail}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, orgEmail: e.target.value }))}
+                    required
+                  />
+                </div>
+
+                <div className={formGroupClassName}>
+                  <label htmlFor="expirationDays" className={labelClassName}>
+                    Expiration (Days)
+                    <span className="ml-1 text-xs text-gray-400">(Max: 45 days)</span>
                   </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    className="w-full bg-gray-700 border-2 border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-purple-500 transition-all duration-300 h-32"
-                    placeholder="Describe the job in detail"
+                  <input
+                    type="number"
+                    id="expirationDays"
+                    min="1"
+                    max="45"
+                    className={inputClassName}
+                    value={formData.expirationDays}
+                    onChange={(e) => handleExpirationChange(e.target.value)}
                     required
                   />
-                </motion.div>
+                </div>
+              </div>
+            </div>
 
-                {/* Job Type and Work Mode */}
-                <motion.div 
-                  variants={itemVariants}
-                  className="grid md:grid-cols-3 gap-6"
-                >
-                  <motion.div variants={itemVariants}>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Job Type
-                    </label>
+            {/* Job Details */}
+            <div className="space-y-6">
+              <div className={formGroupClassName}>
+                <label htmlFor="description" className={labelClassName}>Job Description</label>
+                <div className="overflow-hidden rounded-lg border border-purple-500/20">
+                  <MenuBar editor={editor} />
+                  <EditorContent
+                    editor={editor}
+                    className="prose prose-invert max-w-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className={formGroupClassName}>
+                  <label htmlFor="jobType" className={labelClassName}>Job Type</label>
+                  <div className={selectWrapperClassName}>
                     <select
-                      name="jobType"
+                      id="jobType"
+                      className={`${selectClassName} pr-10`}
                       value={formData.jobType}
-                      onChange={handleInputChange}
-                      className="w-full bg-gray-700 border-2 border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-purple-500 transition-all duration-300"
-                      required
+                      onChange={(e) => setFormData(prev => ({ ...prev, jobType: parseInt(e.target.value) }))}
                     >
-                      {Object.values(JobType).map((type) => (
-                        <option key={type} value={type}>
-                          {type}
-                        </option>
-                      ))}
+                      {Object.entries(JobType)
+                        .filter(([key]) => isNaN(Number(key)))
+                        .map(([key, value]) => (
+                          <option key={value} value={value} className={optionClassName}>
+                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                          </option>
+                        ))}
                     </select>
-                  </motion.div>
+                    <div className={selectIconClassName}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
 
-                  <motion.div variants={itemVariants}>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Work Mode
-                    </label>
+                <div className={formGroupClassName}>
+                  <label htmlFor="workMode" className={labelClassName}>Work Mode</label>
+                  <div className={selectWrapperClassName}>
                     <select
-                      name="workMode"
+                      id="workMode"
+                      className={`${selectClassName} pr-10`}
                       value={formData.workMode}
-                      onChange={handleInputChange}
-                      className="w-full bg-gray-700 border-2 border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-purple-500 transition-all duration-300"
-                      required
+                      onChange={(e) => setFormData(prev => ({ ...prev, workMode: parseInt(e.target.value) }))}
                     >
-                      {Object.values(WorkMode).map((mode) => (
-                        <option key={mode} value={mode}>
-                          {mode}
-                        </option>
-                      ))}
+                      {Object.entries(WorkMode)
+                        .filter(([key]) => isNaN(Number(key)))
+                        .map(([key, value]) => (
+                          <option key={value} value={value} className={optionClassName}>
+                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                          </option>
+                        ))}
                     </select>
-                  </motion.div>
+                    <div className={selectIconClassName}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-400">Select the preferred working arrangement</p>
+                </div>
 
-                  <motion.div variants={itemVariants}>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Job Expiration (Days)
-                    </label>
-                    <input
-                      type="number"
-                      name="expirationDays"
-                      value={formData.expirationDays}
-                      onChange={handleInputChange}
-                      className="w-full bg-gray-700 border-2 border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-purple-500 transition-all duration-300"
-                      min={1}
-                      max={90}
-                      required
-                    />
-                  </motion.div>
-                </motion.div>
-              </motion.div>
-            )}
-
-            {activeSection === 'companyInfo' && (
-              <motion.div 
-                key="companyInfo"
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                variants={sectionVariants}
-                className="space-y-6"
-              >
-                {renderSectionHeader('Company Information', 'Enter company details', <CubeTransparentIcon className="w-6 h-6" />)}
-
-                {/* Organization Details */}
-                <motion.div 
-                  variants={itemVariants}
-                  className="grid md:grid-cols-2 gap-6"
-                >
-                  <motion.div variants={itemVariants}>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Organization Name
-                    </label>
+                <div className={formGroupClassName}>
+                  <label htmlFor="minimumSalary" className={labelClassName}>Minimum Salary</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">$</span>
                     <input
                       type="text"
-                      name="orgName"
-                      value={formData.orgName}
-                      onChange={handleInputChange}
-                      className="w-full bg-gray-700 border-2 border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-purple-500 transition-all duration-300"
-                      placeholder="Enter organization name"
-                      required
-                    />
-                  </motion.div>
-
-                  <motion.div variants={itemVariants}>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Organization Email
-                    </label>
-                    <input
-                      type="email"
-                      name="orgEmail"
-                      value={formData.orgEmail}
-                      onChange={handleInputChange}
-                      className="w-full bg-gray-700 border-2 border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-purple-500 transition-all duration-300"
-                      placeholder="Enter organization email"
-                      required
-                    />
-                  </motion.div>
-                </motion.div>
-
-                {/* Logo Upload */}
-                <motion.div variants={itemVariants}>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Company Logo
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <input
-                      type="file"
-                      ref={logoInputRef}
-                      onChange={handleLogoUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <motion.button
-                      type="button"
-                      onClick={() => logoInputRef.current?.click()}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center"
-                    >
-                      <PhotoIcon className="w-5 h-5 mr-2" />
-                      Upload Logo
-                    </motion.button>
-
-                    <AnimatePresence>
-                      {logoPreview && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          className="flex items-center space-x-2"
-                        >
-                          <img
-                            src={logoPreview}
-                            alt="Logo Preview"
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
-                          {isUploading ? (
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ 
-                                repeat: Infinity, 
-                                duration: 1, 
-                                ease: "linear" 
-                              }}
-                              className="w-8 h-8 border-4 border-t-purple-500 border-gray-200 rounded-full"
-                            />
-                          ) : (
-                            <motion.button
-                              type="button"
-                              onClick={removeLogoPreview}
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              className="text-red-500 hover:text-red-600"
-                            >
-                              <TrashIcon className="w-6 h-6" />
-                            </motion.button>
-                          )}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-
-            {activeSection === 'customFields' && (
-              <motion.div 
-                key="customFields"
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                variants={sectionVariants}
-                className="space-y-6"
-              >
-                {renderSectionHeader('Custom Fields', 'Add custom fields for your job listing', <CubeTransparentIcon className="w-6 h-6" />)}
-
-                {/* Custom Fields */}
-                <motion.div variants={itemVariants}>
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-bold">Custom Fields</h2>
-                    <motion.button
-                      type="button"
-                      onClick={addCustomField}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center"
-                    >
-                      <PlusCircleIcon className="w-5 h-5 mr-2" />
-                      Add Field
-                    </motion.button>
-                  </div>
-
-                  {formData.fieldName.map((field, index) => (
-                    <motion.div 
-                      key={index} 
-                      variants={itemVariants}
-                      className="flex items-center space-x-4 mb-4 bg-gray-700 p-4 rounded-lg"
-                    >
-                      <input
-                        type="text"
-                        name="fieldName"
-                        value={field}
-                        onChange={(e) => handleCustomFieldChange(index, e)}
-                        className="flex-grow bg-gray-600 border-2 border-gray-500 rounded-lg px-4 py-2 focus:outline-none focus:border-purple-500 transition-all duration-300"
-                        placeholder="Enter custom field name"
-                      />
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          name="isRequired"
-                          checked={formData.isRequired[index]}
-                          onChange={(e) => handleCustomFieldChange(index, e)}
-                          className="form-checkbox h-5 w-5 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500"
-                        />
-                        <label className="text-sm text-gray-300">Required</label>
-                      </div>
-                      {formData.fieldName.length > 1 && (
-                        <motion.button
-                          type="button"
-                          onClick={() => removeCustomField(index)}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="text-red-500 hover:text-red-600 transition-colors duration-300"
-                        >
-                          <TrashIcon className="h-6 w-6" />
-                        </motion.button>
-                      )}
-                    </motion.div>
-                  ))}
-                </motion.div>
-              </motion.div>
-            )}
-
-            {activeSection === 'salaryDetails' && (
-              <motion.div 
-                key="salaryDetails"
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                variants={sectionVariants}
-                className="space-y-6"
-              >
-                {renderSectionHeader('Salary Details', 'Enter salary details for your job listing', <CubeTransparentIcon className="w-6 h-6" />)}
-
-                {/* Salary Details */}
-                <motion.div 
-                  variants={itemVariants}
-                  className="grid md:grid-cols-2 gap-6"
-                >
-                  <motion.div variants={itemVariants}>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Minimum Salary
-                    </label>
-                    <input
-                      type="text"
-                      name="minimumSalary"
+                      id="minimumSalary"
+                      className={`${inputClassName} pl-8`}
+                      placeholder="e.g. $50,000"
                       value={formData.minimumSalary}
-                      onChange={handleInputChange}
-                      className="w-full bg-gray-700 border-2 border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-purple-500 transition-all duration-300"
-                      placeholder="Enter minimum salary"
+                      onChange={(e) => setFormData((prev) => ({ ...prev, minimumSalary: e.target.value }))}
                       required
                     />
-                  </motion.div>
+                  </div>
+                </div>
 
-                  <motion.div variants={itemVariants}>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Maximum Salary
-                    </label>
+                <div className={formGroupClassName}>
+                  <label htmlFor="maximumSalary" className={labelClassName}>Maximum Salary</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">$</span>
                     <input
                       type="text"
-                      name="maximumSalary"
+                      id="maximumSalary"
+                      className={`${inputClassName} pl-8`}
+                      placeholder="e.g. $80,000"
                       value={formData.maximumSalary}
-                      onChange={handleInputChange}
-                      className="w-full bg-gray-700 border-2 border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-purple-500 transition-all duration-300"
-                      placeholder="Enter maximum salary"
+                      onChange={(e) => setFormData((prev) => ({ ...prev, maximumSalary: e.target.value }))}
                       required
                     />
-                  </motion.div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-          <motion.div 
-            variants={itemVariants} 
-            className="flex justify-between mt-8"
-          >
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                const sections = ['jobDetails', 'companyInfo', 'customFields', 'salaryDetails'];
-                const currentIndex = sections.indexOf(activeSection);
-                if (currentIndex > 0) {
-                  setActiveSection(sections[currentIndex - 1] as any);
-                }
-              }}
-              className="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg flex items-center"
-              disabled={activeSection === 'jobDetails'}
-            >
-              <ChevronLeftIcon className="w-5 h-5 mr-2" />
-              Previous
-            </motion.button>
+            {/* Custom Fields Section */}
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-purple-200 font-orbitron">Custom Application Fields</h3>
+                <button
+                  type="button"
+                  onClick={handleAddCustomField}
+                  className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-all duration-200 flex items-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span>Add Field</span>
+                </button>
+              </div>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                const sections = ['jobDetails', 'companyInfo', 'customFields', 'salaryDetails'];
-                const currentIndex = sections.indexOf(activeSection);
-                if (currentIndex < sections.length - 1) {
-                  setActiveSection(sections[currentIndex + 1] as any);
-                }
-              }}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg flex items-center"
-            >
-              Next
-              <ChevronRightIcon className="w-5 h-5 ml-2" />
-            </motion.button>
-          </motion.div>
+              <div className="space-y-4">
+                {customFields.map((field, index) => (
+                  <div key={index} className="flex items-start space-x-4">
+                    <div className="flex-1 space-y-4">
+                      <div className={formGroupClassName}>
+                        <input
+                          type="text"
+                          className={inputClassName}
+                          placeholder="Field Label"
+                          value={field.fieldName}
+                          onChange={(e) => handleCustomFieldChange(index, 'fieldName', e.target.value)}
+                        />
+                      </div>
+                      <div className={formGroupClassName}>
+                        <label className={labelClassName}>Required</label>
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={field.isRequired}
+                            onChange={(e) => handleCustomFieldChange(index, 'isRequired', e.target.checked)}
+                            className="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-purple-500"
+                          />
+                          <span className="text-sm font-medium text-purple-200">Required</span>
+                        </label>
+                      </div>
+                    </div>
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCustomField(index)}
+                        className="p-2 text-red-400 hover:text-red-300 transition-colors duration-200"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          {activeSection === 'salaryDetails' && (
-            <motion.div 
-              variants={itemVariants}
-              className="text-center mt-8"
-            >
-              <motion.button
-                type="submit"
-                onClick={handleSubmit}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 transform"
+            {/* Submit Button */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="px-4 py-2 bg-gray-700/20 hover:bg-gray-700/30 text-gray-300 rounded-lg transition-all duration-200 flex items-center space-x-2 mr-4"
               >
-                Post Job
-              </motion.button>
-            </motion.div>
-          )}
-        </motion.div>
-      </motion.div>
-    </AdminDashboardLayout>
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-800 text-white rounded-lg hover:from-purple-700 hover:to-purple-900 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Post Job</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <style jsx global>{`
+        .ProseMirror {
+          min-height: 200px;
+          padding: 1rem;
+          background: rgba(0, 0, 0, 0.2);
+          color: #fff;
+        }
+
+        .ProseMirror:focus {
+          outline: none;
+        }
+
+        .ProseMirror > * + * {
+          margin-top: 0.75em;
+        }
+
+        .ProseMirror ul,
+        .ProseMirror ol {
+          padding: 0 1rem;
+        }
+
+        .ProseMirror ul {
+          list-style-type: disc;
+        }
+
+        .ProseMirror ol {
+          list-style-type: decimal;
+        }
+
+        .ProseMirror p.is-editor-empty:first-child::before {
+          color: #666;
+          content: attr(data-placeholder);
+          float: left;
+          height: 0;
+          pointer-events: none;
+        }
+      `}</style>
+    </div>
   );
 };
 
-export default CreateJobPage;
+export default withAdminLayout(CreateJobPage);

@@ -1,23 +1,23 @@
 // Enums matching Solidity contract
 export enum WorkMode {
-  Remote = "Remote",
-  Onsite = "Onsite",
-  Hybrid = "Hybrid",
+  Remote = 0,
+  Onsite = 1,
+  Hybrid = 2
 }
 
 export enum JobType {
-  FullTime = "FullTime",
-  PartTime = "PartTime",
-  Internship = "Internship",
-  Freelance = "Freelance",
-  Contract = "Contract",
+  FullTime = 0,
+  PartTime = 1,
+  Internship = 2,
+  Freelance = 3,
+  Contract = 4
 }
 
 export enum ApplicationState {
-  Submitted = "Submitted",
-  Reviewed = "Reviewed",
-  EmailSent = "EmailSent",
-  Closed = "Closed",
+  Submitted = 0,
+  Reviewed = 1,
+  EmailSent = 2,
+  Closed = 3
 }
 
 export interface CustomField {
