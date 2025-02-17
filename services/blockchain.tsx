@@ -81,7 +81,6 @@ const postJob = async (job: JobPostParams): Promise<void> => {
 
     const contract = await getEthereumContract();
     const serviceFee = await contract.serviceFee();
-    console.log("Service fee from contract:", serviceFee.toString());
 
     console.log("Preparing transaction with values:", {
       orgName: job.orgName,
@@ -99,7 +98,7 @@ const postJob = async (job: JobPostParams): Promise<void> => {
       serviceFee: serviceFee.toString()
     });
 
-    tx = await contract.postJob(
+    const tx = await contract.postJob(
       job.orgName,
       job.title,
       job.description,
