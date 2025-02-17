@@ -114,7 +114,7 @@ const CreateJobPage = () => {
 
       // Upload to IPFS
       const { cid } = await uploadToIPFS(file);
-      
+
       clearInterval(progressInterval);
       setUploadProgress(100);
 
@@ -163,7 +163,7 @@ const CreateJobPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       // Form validation
       if (!formData.orgName.trim()) throw new Error("Organization name is required");
@@ -173,7 +173,7 @@ const CreateJobPage = () => {
       if (!formData.logo) throw new Error("Company logo is required");
       if (!formData.minimumSalary.trim()) throw new Error("Minimum salary is required");
       if (!formData.maximumSalary.trim()) throw new Error("Maximum salary is required");
-      
+
       // Email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.orgEmail)) {
@@ -218,9 +218,8 @@ const CreateJobPage = () => {
         <button
           onClick={() => editor.chain().focus().toggleBold().run()}
           disabled={!editor.can().chain().focus().toggleBold().run()}
-          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${
-            editor.isActive('bold') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
-          }`}
+          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${editor.isActive('bold') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
+            }`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 12h8a4 4 0 100-8H6v8zm0 0h8a4 4 0 110 8H6v-8z" />
@@ -230,9 +229,8 @@ const CreateJobPage = () => {
         <button
           onClick={() => editor.chain().focus().toggleItalic().run()}
           disabled={!editor.can().chain().focus().toggleItalic().run()}
-          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${
-            editor.isActive('italic') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
-          }`}
+          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${editor.isActive('italic') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
+            }`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l-4 4M6 16l4-4" />
@@ -241,9 +239,8 @@ const CreateJobPage = () => {
 
         <button
           onClick={() => editor.chain().focus().toggleUnderline().run()}
-          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${
-            editor.isActive('underline') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
-          }`}
+          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${editor.isActive('underline') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
+            }`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M7 20h10" />
@@ -254,9 +251,8 @@ const CreateJobPage = () => {
 
         <button
           onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${
-            editor.isActive('bulletList') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
-          }`}
+          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${editor.isActive('bulletList') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
+            }`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -265,9 +261,8 @@ const CreateJobPage = () => {
 
         <button
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${
-            editor.isActive('orderedList') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
-          }`}
+          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${editor.isActive('orderedList') ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
+            }`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h12M7 12h12M7 17h12M3 7h.01M3 12h.01M3 17h.01" />
@@ -278,9 +273,8 @@ const CreateJobPage = () => {
 
         <button
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
-          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${
-            editor.isActive({ textAlign: 'left' }) ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
-          }`}
+          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
+            }`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h10M4 18h14" />
@@ -289,9 +283,8 @@ const CreateJobPage = () => {
 
         <button
           onClick={() => editor.chain().focus().setTextAlign('center').run()}
-          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${
-            editor.isActive({ textAlign: 'center' }) ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
-          }`}
+          className={`p-2 rounded hover:bg-purple-500/20 transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400'
+            }`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M7 12h10M6 18h12" />
@@ -343,9 +336,8 @@ const CreateJobPage = () => {
                   />
                   <label
                     htmlFor="logo-upload"
-                    className={`flex items-center justify-center w-full px-4 py-3 bg-black/20 border border-purple-500/20 rounded-lg hover:bg-purple-500/10 transition-all duration-200 cursor-pointer group ${
-                      isUploading ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
+                    className={`flex items-center justify-center w-full px-4 py-3 bg-black/20 border border-purple-500/20 rounded-lg hover:bg-purple-500/10 transition-all duration-200 cursor-pointer group ${isUploading ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                   >
                     {isUploading ? (
                       <div className="flex items-center space-x-2">
