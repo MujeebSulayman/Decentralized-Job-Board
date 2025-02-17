@@ -77,7 +77,28 @@ const postJob = async (job: JobPostParams): Promise<void> => {
     );
   }
   try {
+    console.log("Starting blockchain transaction with params:", job);
+
     const contract = await getEthereumContract();
+    const serviceFee = await contract.serviceFee();
+    console.log("Service fee from contract:", serviceFee.toString());
+
+    console.log("Preparing transaction with values:", {
+      orgName: job.orgName,
+      title: job.title,
+      description: job.description,
+      orgEmail: job.orgEmail,
+      logoCID: job.logoCID,
+      fieldName: job.fieldName,
+      isRequired: job.isRequired,
+      jobType: job.jobType,
+      workMode: job.workMode,
+      minimumSalary: job.minimumSalary,
+      maximumSalary: job.maximumSalary,
+      expirationDays: job.expirationDays,
+      serviceFee: serviceFee.toString()
+    });
+
     tx = await contract.postJob(
       job.orgName,
       job.title,
@@ -90,11 +111,17 @@ const postJob = async (job: JobPostParams): Promise<void> => {
       job.workMode,
       job.minimumSalary,
       job.maximumSalary,
-      job.expirationDays
+      job.expirationDays,
+      { value: serviceFee }
     );
-    await tx.wait();
+
+    console.log("Transaction sent:", tx);
+    const receipt = await tx.wait();
+    console.log("Transaction receipt:", receipt);
+
     return Promise.resolve(tx);
   } catch (error) {
+    console.error("Blockchain transaction error:", error);
     reportError(error);
     return Promise.reject(error);
   }
@@ -254,9 +281,8 @@ const closeJob = async (jobId: number): Promise<void> => {
 
 const getJob = async (jobId: number): Promise<JobStruct> => {
   const contract = await getEthereumContract();
-  tx = await contract.getJob(jobId);
-  await tx.wait();
-  return Promise.resolve(tx);
+  const job = await contract.getJob(jobId);
+  return job;
 };
 
 const getAllJobs = async (): Promise<JobStruct[]> => {

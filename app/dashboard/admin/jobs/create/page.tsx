@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { JobType, WorkMode } from "@/utils/type.dt";
 import { uploadToIPFS } from "@/utils/ipfsUpload";
-import { postJob } from "@/services/blockchain";
+import { postJob, getServiceFee } from "@/services/blockchain";
 import Image from "next/image";
 import withAdminLayout from "@/components/hoc/withAdminLayout";
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -43,6 +43,22 @@ const CreateJobPage = () => {
   const [customFields, setCustomFields] = useState<CustomFieldState[]>([
     { fieldName: "", isRequired: false },
   ]);
+
+  const [serviceFee, setServiceFee] = useState<string>("0");
+
+  useEffect(() => {
+    const fetchServiceFee = async () => {
+      try {
+        const fee = await getServiceFee();
+        setServiceFee(fee);
+      } catch (error) {
+        console.error("Error fetching service fee:", error);
+        toast.error("Failed to fetch service fee");
+      }
+    };
+
+    fetchServiceFee();
+  }, []);
 
   const editor = useEditor({
     extensions: [
@@ -121,7 +137,7 @@ const CreateJobPage = () => {
       // Update form with IPFS URL
       setFormData(prev => ({
         ...prev,
-        logo: `https://ipfs.io/ipfs/${cid}`
+        logo: cid
       }));
 
       toast.success('Logo uploaded successfully');
@@ -174,6 +190,22 @@ const CreateJobPage = () => {
       if (!formData.minimumSalary.trim()) throw new Error("Minimum salary is required");
       if (!formData.maximumSalary.trim()) throw new Error("Maximum salary is required");
 
+      // Log all form data before submission
+      console.log("Submitting job with data:", {
+        orgName: formData.orgName,
+        title: formData.title,
+        description: formData.description,
+        orgEmail: formData.orgEmail,
+        logoCID: formData.logo,
+        fieldName: customFields.map(field => field.fieldName),
+        isRequired: customFields.map(field => field.isRequired),
+        jobType: formData.jobType,
+        workMode: formData.workMode,
+        minimumSalary: formData.minimumSalary,
+        maximumSalary: formData.maximumSalary,
+        expirationDays: formData.expirationDays
+      });
+
       // Email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.orgEmail)) {
@@ -181,16 +213,17 @@ const CreateJobPage = () => {
       }
 
       setIsLoading(true);
+      const processingToast = toast.loading("Processing your transaction...");
 
-      // Prepare job post parameters
+      // Log the exact parameters being sent to the blockchain
       const jobParams = {
         orgName: formData.orgName,
         title: formData.title,
         description: formData.description,
         orgEmail: formData.orgEmail,
         logoCID: formData.logo,
-        fieldName: formData.customFields.map(field => field.fieldName),
-        isRequired: formData.customFields.map(field => field.isRequired),
+        fieldName: customFields.map(field => field.fieldName),
+        isRequired: customFields.map(field => field.isRequired),
         jobType: formData.jobType,
         workMode: formData.workMode,
         minimumSalary: formData.minimumSalary,
@@ -198,10 +231,28 @@ const CreateJobPage = () => {
         expirationDays: formData.expirationDays
       };
 
-      await postJob(jobParams);
-      toast.success("Job posted successfully!");
-      router.push("/dashboard/admin/jobs");
+      console.log("Sending to blockchain:", jobParams);
+
+      // Log the service fee
+      console.log("Service Fee:", serviceFee);
+
+      // Add blockchain transaction logging
+      const transaction = await postJob(jobParams);
+      console.log("Transaction response:", transaction);
+
+      toast.update(processingToast, {
+        render: "Job posted successfully! Redirecting...",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000
+      });
+
+      setTimeout(() => {
+        router.push("/dashboard/admin/jobs");
+      }, 2000);
+
     } catch (error) {
+      console.error("Error submitting job:", error);
       toast.error(error instanceof Error ? error.message : "Failed to post job");
     } finally {
       setIsLoading(false);
@@ -305,6 +356,23 @@ const CreateJobPage = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="p-8 space-y-8">
+            {/* Service Fee Notice */}
+            <div className="mb-6 p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-sm text-purple-300">
+                    Service Fee: <span className="font-bold">{serviceFee} ETH</span>
+                  </p>
+                  <p className="text-xs text-purple-400/70 mt-0.5">
+                    This fee will be charged when posting the job
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Logo Upload Section */}
             <div className="p-6 bg-gray-800/50 rounded-xl border border-purple-500/20">
               <label className="block text-sm font-semibold text-purple-200 mb-4">Company Logo</label>
