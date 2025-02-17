@@ -360,6 +360,17 @@ const withdrawFunds = async (): Promise<void> => {
   }
 };
 
+const getServiceFee = async (): Promise<string> => {
+  try {
+    const contract = await getEthereumContract();
+    const fee = await contract.serviceFee();
+    return fromWei(fee);
+  } catch (error) {
+    console.error("Error getting service fee:", error);
+    throw error;
+  }
+};
+
 export {
   updateServiceFee,
   postJob,
@@ -379,5 +390,6 @@ export {
   getJobApplicationCount,
   getJobApplications,
   withdrawFunds,
+  getServiceFee,
   grantEmployerRole
 };

@@ -146,7 +146,7 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         string memory maximumSalary,
         uint256 expirationDays
     ) public payable nonReentrant returns (uint256) {
-        // Authorization check for job posting
+        
         require(
             msg.sender == tx.origin || hasRole(ADMIN_ROLE, msg.sender),
             "Unauthorized to post job"
@@ -161,7 +161,7 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
 
         // Determine the employer
         address jobEmployer = hasRole(ADMIN_ROLE, msg.sender)
-            ? tx.origin // Use original transaction sender as employer
+            ? tx.origin
             : msg.sender;
 
         CustomField[] memory customField = new CustomField[](fieldName.length);
@@ -219,7 +219,6 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         string memory minimumSalary,
         string memory maximumSalary
     ) public nonReentrant {
-        // Authorization check for job editing
         require(
             msg.sender == jobs[id].employer || hasRole(ADMIN_ROLE, msg.sender),
             "Unauthorized to edit job"
@@ -257,7 +256,6 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     }
 
     function deleteJob(uint256 id) public {
-        // Authorization check for job deletion
         require(
             msg.sender == jobs[id].employer || hasRole(ADMIN_ROLE, msg.sender),
             "Unauthorized to delete job"
