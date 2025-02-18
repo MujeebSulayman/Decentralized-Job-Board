@@ -223,21 +223,34 @@ const expireJob = async (jobId: number): Promise<void> => {
 };
 
 const applyForJob = async (
-  jobApplication: ApplicationStruct
-): Promise<void> => {
+  jobId: number,
+  name: string,
+  email: string,
+  phoneNumber: string,
+  location: string,
+  cvCID: string,
+  fieldResponses: string[]
+): Promise<any> => {
   if (!ethereum) {
-    return Promise.reject(
-      new Error("Please install MetaMask to use this application.")
-    );
+    throw new Error("Please install MetaMask to use this application.");
   }
+
   try {
     const contract = await getEthereumContract();
-    tx = await contract.applyForJob(jobApplication);
-    await tx.wait();
-    return Promise.resolve(tx);
+    const tx = await contract.applyForJob(
+      jobId,
+      name,
+      email,
+      phoneNumber,
+      location,
+      fieldResponses,
+      cvCID
+    );
+    const receipt = await tx.wait();
+    return receipt;
   } catch (error) {
     reportError(error);
-    return Promise.reject(error);
+    throw error;
   }
 };
 

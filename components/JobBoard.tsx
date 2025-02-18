@@ -100,6 +100,13 @@ const JobBoard = () => {
             );
         }
 
+        // Company filter from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const companyFilter = urlParams.get('company');
+        if (companyFilter) {
+            filtered = filtered.filter(job => job.employer === companyFilter);
+        }
+
         // Sort results
         filtered.sort((a, b) => {
             switch (sortBy) {
@@ -245,7 +252,7 @@ const JobBoard = () => {
                     </div>
                 </div>
 
-        
+
             </div>
 
             {/* Job Listings */}

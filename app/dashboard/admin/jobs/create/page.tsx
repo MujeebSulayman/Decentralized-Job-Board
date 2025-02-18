@@ -162,11 +162,12 @@ const CreateJobPage = () => {
     field: keyof CustomFieldState,
     value: string | boolean
   ) => {
-    setCustomFields((prev) =>
-      prev.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
-      )
-    );
+    const updatedFields = [...customFields];
+    updatedFields[index] = {
+      ...updatedFields[index],
+      [field]: value,
+    };
+    setCustomFields(updatedFields);
   };
 
   const handleExpirationChange = (value: string) => {
@@ -629,60 +630,78 @@ const CreateJobPage = () => {
 
             {/* Custom Fields Section */}
             <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-purple-200 font-orbitron">Custom Application Fields</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-200">
+                  Custom Requirements
+                  <span className="ml-2 text-sm text-gray-400">
+                    (Add specific requirements for applicants)
+                  </span>
+                </h3>
                 <button
                   type="button"
                   onClick={handleAddCustomField}
-                  className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-all duration-200 flex items-center space-x-2"
+                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 rounded-lg text-sm font-medium transition-colors"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span>Add Field</span>
+                  Add Requirement
                 </button>
               </div>
 
-              <div className="space-y-4">
-                {customFields.map((field, index) => (
-                  <div key={index} className="flex items-start space-x-4">
-                    <div className="flex-1 space-y-4">
-                      <div className={formGroupClassName}>
-                        <input
-                          type="text"
-                          className={inputClassName}
-                          placeholder="Field Label"
-                          value={field.fieldName}
-                          onChange={(e) => handleCustomFieldChange(index, 'fieldName', e.target.value)}
-                        />
-                      </div>
-                      <div className={formGroupClassName}>
-                        <label className={labelClassName}>Required</label>
-                        <label className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            checked={field.isRequired}
-                            onChange={(e) => handleCustomFieldChange(index, 'isRequired', e.target.checked)}
-                            className="rounded bg-gray-800 border-gray-700 text-purple-600 focus:ring-purple-500"
-                          />
-                          <span className="text-sm font-medium text-purple-200">Required</span>
-                        </label>
-                      </div>
+              {customFields.map((field, index) => (
+                <div
+                  key={index}
+                  className="flex items-start space-x-4 p-4 bg-black/20 rounded-lg border border-gray-700/50"
+                >
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="e.g., Years of Experience, Portfolio URL, etc."
+                        value={field.fieldName}
+                        onChange={(e) =>
+                          handleCustomFieldChange(index, "fieldName", e.target.value)
+                        }
+                        className={inputClassName}
+                      />
                     </div>
-                    {index > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCustomField(index)}
-                        className="p-2 text-red-400 hover:text-red-300 transition-colors duration-200"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    )}
+                    <div className="flex items-center space-x-2">
+                      <label className="flex items-center space-x-2 text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={field.isRequired}
+                          onChange={(e) =>
+                            handleCustomFieldChange(
+                              index,
+                              "isRequired",
+                              e.target.checked
+                            )
+                          }
+                          className="rounded border-gray-700 text-purple-500 focus:ring-purple-500"
+                        />
+                        <span>Required field</span>
+                      </label>
+                    </div>
                   </div>
-                ))}
-              </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCustomField(index)}
+                    className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                    title="Remove field"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+
+              {customFields.length === 0 && (
+                <div className="text-center py-6 bg-black/20 rounded-lg border border-dashed border-gray-700">
+                  <p className="text-gray-400">
+                    No custom requirements added yet. Click "Add Requirement" to create one.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
