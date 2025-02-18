@@ -89,12 +89,11 @@ const ApplicationsPage: React.FC = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 rounded-full text-xs ${
-                                            application.status === 'accepted' ? 'bg-green-500/20 text-green-400' :
-                                            application.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                                            application.status === 'reviewed' ? 'bg-blue-500/20 text-blue-400' :
-                                            'bg-yellow-500/20 text-yellow-400'
-                                        }`}>
+                                        <span className={`px-2 py-1 rounded-full text-xs ${application.status === 'accepted' ? 'bg-green-500/20 text-green-400' :
+                                                application.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                                                    application.status === 'reviewed' ? 'bg-blue-500/20 text-blue-400' :
+                                                        'bg-yellow-500/20 text-yellow-400'
+                                            }`}>
                                             {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                                         </span>
                                     </td>
@@ -103,13 +102,13 @@ const ApplicationsPage: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex space-x-3">
-                                            <button 
+                                            <button
                                                 className="p-2 text-blue-400 hover:text-blue-300 transition-colors"
                                                 title="View CV"
                                             >
                                                 <ClipboardDocumentCheckIcon className="h-5 w-5" />
                                             </button>
-                                            <button 
+                                            <button
                                                 className="p-2 text-purple-400 hover:text-purple-300 transition-colors"
                                                 title="Send Email"
                                             >
@@ -117,13 +116,13 @@ const ApplicationsPage: React.FC = () => {
                                             </button>
                                             {application.status === 'submitted' && (
                                                 <>
-                                                    <button 
+                                                    <button
                                                         className="p-2 text-green-400 hover:text-green-300 transition-colors"
                                                         title="Accept Application"
                                                     >
                                                         <CheckCircleIcon className="h-5 w-5" />
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         className="p-2 text-red-400 hover:text-red-300 transition-colors"
                                                         title="Reject Application"
                                                     >

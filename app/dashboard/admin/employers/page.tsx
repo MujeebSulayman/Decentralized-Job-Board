@@ -59,8 +59,8 @@ const EmployersPage: React.FC = () => {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center">
                                             {employer.logo ? (
-                                                <img 
-                                                    src={employer.logo} 
+                                                <img
+                                                    src={employer.logo}
                                                     alt={employer.orgName}
                                                     className="h-8 w-8 rounded-full mr-3"
                                                 />
@@ -104,14 +104,14 @@ const EmployersPage: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex space-x-3">
-                                            <button 
+                                            <button
                                                 className="p-2 text-blue-400 hover:text-blue-300 transition-colors"
                                                 title="View Details"
                                             >
                                                 <EyeIcon className="h-5 w-5" />
                                             </button>
                                             {!employer.isVerified && (
-                                                <button 
+                                                <button
                                                     className="p-2 text-green-400 hover:text-green-300 transition-colors"
                                                     title="Verify Employer"
                                                 >
