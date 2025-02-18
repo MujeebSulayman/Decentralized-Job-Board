@@ -17,12 +17,19 @@ import {
   BriefcaseIcon,
   CurrencyDollarIcon,
   ShieldCheckIcon,
+  BuildingOfficeIcon,
+  WrenchScrewdriverIcon,
+  ClipboardDocumentCheckIcon,
+  Cog6ToothIcon,
+  HomeIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/solid";
 
 interface NavItem {
   path: string;
   text: string;
   icon: React.ComponentType<{ className?: string }>;
+  group: string;
   badge?: string;
 }
 
@@ -51,41 +58,87 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const navItems: NavItem[] = [
+    // Main
     {
       path: "/dashboard/admin",
       text: "Dashboard",
-      icon: ChartBarIcon,
+      icon: HomeIcon,
+      group: "Main"
     },
+
+    // Job Management
     {
       path: "/dashboard/admin/jobs",
-      text: "Jobs",
+      text: "All Jobs",
       icon: BriefcaseIcon,
+      group: "Job Management"
     },
     {
       path: "/dashboard/admin/jobs/create",
       text: "Create Job",
       icon: DocumentPlusIcon,
+      group: "Job Management"
+    },
+    {
+      path: "/dashboard/admin/applications",
+      text: "Applications",
+      icon: ClipboardDocumentCheckIcon,
+      group: "Job Management"
+    },
+
+    // User Management
+    {
+      path: "/dashboard/admin/employers",
+      text: "Employers",
+      icon: BuildingOfficeIcon,
+      group: "User Management"
     },
     {
       path: "/dashboard/admin/users",
       text: "Users",
       icon: UserGroupIcon,
+      group: "User Management"
+    },
+
+    // Analytics & Finance
+    {
+      path: "/dashboard/admin/analytics",
+      text: "Analytics",
+      icon: ChartBarIcon,
+      group: "Analytics & Finance"
     },
     {
-      path: "/dashboard/admin/payments",
-      text: "Payments",
+      path: "/dashboard/admin/finance/fees",
+      text: "Service Fees",
       icon: CurrencyDollarIcon,
+      group: "Analytics & Finance"
     },
     {
-      path: "/dashboard/admin/verification",
-      text: "Verification",
-      icon: DocumentCheckIcon,
+      path: "/dashboard/admin/finance/transactions",
+      text: "Transactions",
+      icon: CurrencyDollarIcon,
+      group: "Analytics & Finance"
+    },
+
+    // System
+    {
+      path: "/dashboard/admin/settings",
+      text: "Settings",
+      icon: Cog6ToothIcon,
+      group: "System"
     },
     {
-      path: "/dashboard/admin/compliance",
-      text: "Compliance",
-      icon: ShieldCheckIcon,
+      path: "/dashboard/admin/system/contract",
+      text: "Contract Status",
+      icon: WrenchScrewdriverIcon,
+      group: "System"
     },
+    {
+      path: "/dashboard/admin/system/logs",
+      text: "Logs",
+      icon: DocumentTextIcon,
+      group: "System"
+    }
   ];
 
   const groupedNavItems = navItems.reduce((acc, item) => {
@@ -161,46 +214,73 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({
       </div>
 
       {/* Navigation (Scrollable) */}
-      <nav className="flex-grow">
-        <div className="space-y-6 px-4 py-6">
-          {Object.entries(groupedNavItems).map(([group, items]) => (
-            <div key={group}>
-              <h3 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 border-b border-gray-800/30 pb-2">
-                {group}
-              </h3>
-              <ul className="space-y-1">
+      <nav className="flex-grow overflow-y-auto">
+        <div className="space-y-8 px-4 py-6">
+          {Object.entries(
+            navItems.reduce((acc, item) => {
+              if (!acc[item.group]) acc[item.group] = [];
+              acc[item.group].push(item);
+              return acc;
+            }, {} as Record<string, NavItem[]>)
+          ).map(([group, items]) => (
+            <div key={group} className="relative">
+              {/* Group Header with Line */}
+              <div className="relative flex items-center mb-4">
+                <h3 className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[#0F172A] z-10">
+                  {group}
+                </h3>
+                <div className="absolute inset-0 flex items-center">
+                  <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-gray-700/50 to-transparent"></div>
+                </div>
+              </div>
+
+              {/* Group Items */}
+              <div className="space-y-1 pl-2">
                 {items.map((item) => (
-                  <li key={item.path}>
-                    <button
-                      onClick={() => handleNavigation(item.path)}
+                  <button
+                    key={item.path}
+                    onClick={() => handleNavigation(item.path)}
+                    className={clsx(
+                      "w-full flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 text-left",
+                      "relative group hover:bg-gray-800/50",
+                      pathname === item.path
+                        ? "bg-green-500/10 text-green-400"
+                        : "text-gray-400 hover:text-white"
+                    )}
+                  >
+                    {/* Active Indicator */}
+                    {pathname === item.path && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-green-500 rounded-r-full" />
+                    )}
+
+                    {/* Icon */}
+                    <item.icon
                       className={clsx(
-                        "w-full flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 text-left",
+                        "w-5 h-5 mr-3 flex-shrink-0 transition-transform duration-200",
                         pathname === item.path
-                          ? "bg-green-500/20 text-green-400"
-                          : "text-gray-300 hover:bg-gray-800/30 hover:text-white",
-                        "group relative"
+                          ? "text-green-400"
+                          : "text-gray-500 group-hover:text-white",
+                        "group-hover:scale-110"
                       )}
-                    >
-                      <item.icon
-                        className={clsx(
-                          "w-5 h-5 mr-3 flex-shrink-0",
-                          pathname === item.path
-                            ? "text-green-400"
-                            : "text-gray-400 group-hover:text-white"
-                        )}
-                      />
-                      <span className="text-sm font-medium flex-grow truncate">
-                        {item.text}
+                    />
+
+                    {/* Text */}
+                    <span className="text-sm font-medium truncate flex-grow">
+                      {item.text}
+                    </span>
+
+                    {/* Badge */}
+                    {item.badge && (
+                      <span className="ml-2 px-2 py-0.5 text-xs font-bold bg-red-500/10 text-red-400 rounded-full">
+                        {item.badge}
                       </span>
-                      {item.badge && (
-                        <span className="ml-2 px-2 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full">
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
-                  </li>
+                    )}
+
+                    {/* Hover Effect */}
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-green-500/0 to-green-500/0 opacity-0 group-hover:opacity-5 transition-opacity duration-200" />
+                  </button>
                 ))}
-              </ul>
+              </div>
             </div>
           ))}
         </div>
