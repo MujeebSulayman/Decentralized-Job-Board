@@ -31,8 +31,13 @@ const JobApplicationPage = () => {
         cv: null as File | null,
     });
     const [customFieldResponses, setCustomFieldResponses] = useState<string[]>([]);
-    const [isUploading, setIsUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
+    const [cvUploadStatus, setCvUploadStatus] = useState({
+        isUploading: false,
+        progress: 0,
+        error: null as string | null,
+        fileName: null as string | null
+    });
+    const [isWalletConnected, setIsWalletConnected] = useState(false);
 
     useEffect(() => {
         const fetchJob = async () => {
@@ -52,6 +57,48 @@ const JobApplicationPage = () => {
         fetchJob();
     }, [params.id]);
 
+    useEffect(() => {
+        const checkWallet = async () => {
+            try {
+                const { ethereum } = window;
+                if (!ethereum) {
+                    setIsWalletConnected(false);
+                    return;
+                }
+
+                const accounts = await ethereum.request({ method: 'eth_accounts' });
+                setIsWalletConnected(accounts && accounts.length > 0);
+            } catch (error) {
+                console.error('Error checking wallet:', error);
+                setIsWalletConnected(false);
+            }
+        };
+
+        checkWallet();
+        window.ethereum?.on('accountsChanged', checkWallet);
+
+        return () => {
+            window.ethereum?.removeListener('accountsChanged', checkWallet);
+        };
+    }, []);
+
+    const connectWallet = async () => {
+        try {
+            const { ethereum } = window;
+            if (!ethereum) {
+                toast.error('Please install MetaMask to apply for jobs');
+                return;
+            }
+
+            const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+            setIsWalletConnected(true);
+            toast.success('Wallet connected successfully!');
+        } catch (error) {
+            console.error('Error connecting wallet:', error);
+            toast.error('Failed to connect wallet');
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!job || !formData.cv || !params.id) {
@@ -66,6 +113,12 @@ const JobApplicationPage = () => {
             // Upload CV first
             const { cid } = await uploadToIPFS(formData.cv);
 
+            // Prepare custom field responses
+            // If there are no custom fields, send an empty array
+            const responses = job.customField && job.customField.length > 0
+                ? job.customField.map((field, index) => customFieldResponses[index] || '')
+                : [];
+
             // Submit application with CV CID
             const receipt = await applyForJob(
                 Number(params.id),
@@ -74,7 +127,7 @@ const JobApplicationPage = () => {
                 formData.phoneNumber,
                 formData.location,
                 cid,
-                customFieldResponses
+                responses // Pass the properly formatted responses array
             );
 
             toast.update(processingToast, {
@@ -96,6 +149,51 @@ const JobApplicationPage = () => {
             setIsSubmitting(false);
         }
     };
+
+    if (!isWalletConnected) {
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+                <div className="bg-gray-800/40 backdrop-blur-sm rounded-xl p-8 border border-gray-700/50 max-w-md w-full mx-4">
+                    <div className="text-center mb-6">
+                        <h2 className="text-2xl font-bold mb-2">Connect Your Wallet</h2>
+                        <p className="text-gray-400">
+                            Please connect your wallet to apply for this job
+                        </p>
+                    </div>
+                    <button
+                        onClick={connectWallet}
+                        className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                    >
+                        <svg
+                            className="w-6 h-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+                            />
+                        </svg>
+                        <span>Connect Wallet</span>
+                    </button>
+                    <p className="text-sm text-gray-500 text-center mt-4">
+                        New to Web3? {' '}
+                        <a
+                            href="https://metamask.io/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-purple-400 hover:text-purple-300"
+                        >
+                            Get MetaMask →
+                        </a>
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     if (isLoading) return <LoadingState />;
     if (!job) return <NotFoundState />;
@@ -143,52 +241,68 @@ const JobApplicationPage = () => {
                                     const file = e.target.files?.[0];
                                     if (!file) return;
 
-                                    // Validate file type correctly
-                                    const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-                                    if (!validTypes.includes(file.type)) {
-                                        toast.error('Please upload a PDF or Word document');
-                                        return;
-                                    }
-
-                                    // Validate file size
-                                    if (file.size > 5 * 1024 * 1024) {
-                                        toast.error('File size must be less than 5MB');
-                                        return;
-                                    }
-
-                                    setIsUploading(true);
-                                    setUploadProgress(0);
+                                    setCvUploadStatus({
+                                        isUploading: true,
+                                        progress: 0,
+                                        error: null,
+                                        fileName: file.name
+                                    });
 
                                     const uploadToast = toast.loading('Preparing CV for upload...');
 
-                                    // Simulate upload progress
-                                    const progressInterval = setInterval(() => {
-                                        setUploadProgress(prev => Math.min(prev + 10, 90));
-                                        toast.update(uploadToast, {
-                                            render: `Uploading CV... ${Math.min(uploadProgress + 10, 90)}%`
-                                        });
-                                    }, 200);
-
                                     try {
+                                        // Validate file size and type
+                                        if (file.size > 5 * 1024 * 1024) {
+                                            throw new Error('File size must be less than 5MB');
+                                        }
+
+                                        const validTypes = [
+                                            'application/pdf',
+                                            'application/msword',
+                                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                                        ];
+
+                                        if (!validTypes.includes(file.type)) {
+                                            throw new Error('Please upload a PDF or Word document');
+                                        }
+
+                                        // Simulate upload progress
+                                        const progressInterval = setInterval(() => {
+                                            setCvUploadStatus(prev => ({
+                                                ...prev,
+                                                progress: Math.min(prev.progress + 10, 90)
+                                            }));
+                                        }, 200);
+
+                                        // Set the file in form state
                                         setFormData({ ...formData, cv: file });
 
+                                        clearInterval(progressInterval);
+                                        setCvUploadStatus(prev => ({ ...prev, progress: 100 }));
+
                                         toast.update(uploadToast, {
-                                            render: 'CV uploaded successfully!',
+                                            render: 'CV ready for submission!',
                                             type: 'success',
                                             isLoading: false,
                                             autoClose: 2000
                                         });
-                                    } catch (error) {
+                                    } catch (error: any) {
+                                        setCvUploadStatus(prev => ({
+                                            ...prev,
+                                            error: error.message
+                                        }));
                                         toast.update(uploadToast, {
-                                            render: 'Failed to upload CV',
+                                            render: error.message,
                                             type: 'error',
                                             isLoading: false,
                                             autoClose: 4000
                                         });
+                                        setFormData(prev => ({ ...prev, cv: null }));
                                     } finally {
-                                        clearInterval(progressInterval);
-                                        setUploadProgress(100);
-                                        setIsUploading(false);
+                                        setCvUploadStatus(prev => ({
+                                            ...prev,
+                                            isUploading: false
+                                        }));
                                     }
                                 }}
                                 className="hidden"
@@ -198,21 +312,21 @@ const JobApplicationPage = () => {
                                 htmlFor="cv-upload"
                                 className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-600 rounded-lg hover:border-purple-500 cursor-pointer transition-colors relative"
                             >
-                                {isUploading ? (
+                                {cvUploadStatus.isUploading ? (
                                     <div className="text-center">
                                         <DocumentArrowUpIcon className="h-8 w-8 text-purple-500 mx-auto mb-2 animate-pulse" />
-                                        <p className="text-purple-500">Uploading... {uploadProgress}%</p>
+                                        <p className="text-purple-500">Uploading... {cvUploadStatus.progress}%</p>
                                         <div className="w-48 h-1 bg-gray-700 rounded-full mt-2 mx-auto overflow-hidden">
                                             <div
                                                 className="h-full bg-purple-500 transition-all duration-300"
-                                                style={{ width: `${uploadProgress}%` }}
+                                                style={{ width: `${cvUploadStatus.progress}%` }}
                                             />
                                         </div>
                                     </div>
                                 ) : formData.cv ? (
                                     <div className="text-center">
                                         <DocumentArrowUpIcon className="h-8 w-8 text-purple-500 mx-auto mb-2" />
-                                        <p className="text-purple-500">{formData.cv.name}</p>
+                                        <p className="text-purple-500">{cvUploadStatus.fileName}</p>
                                         <p className="text-gray-500 text-sm mt-1">Click to change file</p>
                                     </div>
                                 ) : (
@@ -224,6 +338,43 @@ const JobApplicationPage = () => {
                                 )}
                             </label>
                         </div>
+
+                        {/* Additional Requirements Section - Only show if valid requirements exist */}
+                        {job.customField &&
+                            job.customField.length > 0 &&
+                            job.customField.some(field => field.fieldName && field.fieldName.trim()) && (
+                                <div className="bg-black/20 rounded-lg p-6 border border-gray-700">
+                                    <h2 className="text-lg font-semibold mb-4">Additional Requirements</h2>
+                                    <div className="space-y-4">
+                                        {job.customField
+                                            .filter(field => field.fieldName && field.fieldName.trim())
+                                            .map((field, index) => (
+                                                <div key={index} className="space-y-2">
+                                                    <label className="block text-gray-300">
+                                                        {field.fieldName}
+                                                        {field.isRequired && (
+                                                            <span className="ml-2 text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-400">
+                                                                Required
+                                                            </span>
+                                                        )}
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        required={field.isRequired}
+                                                        value={customFieldResponses[index]}
+                                                        onChange={(e) => {
+                                                            const newResponses = [...customFieldResponses];
+                                                            newResponses[index] = e.target.value;
+                                                            setCustomFieldResponses(newResponses);
+                                                        }}
+                                                        className="w-full px-4 py-3 bg-black/20 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-transparent"
+                                                        placeholder={`Enter your response for ${field.fieldName}`}
+                                                    />
+                                                </div>
+                                            ))}
+                                    </div>
+                                </div>
+                            )}
 
                         {/* Basic Information */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -268,32 +419,6 @@ const JobApplicationPage = () => {
                                 />
                             </div>
                         </div>
-
-                        {/* Custom Fields */}
-                        {job.customField.length > 0 && (
-                            <div className="space-y-4">
-                                <h2 className="text-lg font-semibold">Additional Requirements</h2>
-                                {job.customField.map((field, index) => (
-                                    <div key={index}>
-                                        <label className="block text-gray-300 mb-2">
-                                            {field.fieldName}
-                                            {field.isRequired && <span className="text-red-500 ml-1">*</span>}
-                                        </label>
-                                        <input
-                                            type="text"
-                                            required={field.isRequired}
-                                            value={customFieldResponses[index]}
-                                            onChange={(e) => {
-                                                const newResponses = [...customFieldResponses];
-                                                newResponses[index] = e.target.value;
-                                                setCustomFieldResponses(newResponses);
-                                            }}
-                                            className="w-full px-4 py-2 bg-black/20 rounded-lg border border-gray-700 focus:border-purple-500"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        )}
 
                         <button
                             type="submit"

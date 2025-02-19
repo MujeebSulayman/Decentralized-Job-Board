@@ -17,10 +17,23 @@ export const validateFileForUpload = (
 		throw new Error(`File must be smaller than ${maxSizeInMB}MB`);
 	}
 
-	// Check file type (optional: add more allowed types)
-	const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+	// Check file type for both images and documents
+	const allowedTypes = [
+		// Images
+		'image/jpeg',
+		'image/png',
+		'image/gif',
+		'image/webp',
+		// Documents
+		'application/pdf',
+		'application/msword',
+		'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+	];
+
 	if (!allowedTypes.includes(file.type)) {
-		throw new Error('Unsupported file type. Please upload an image.');
+		throw new Error(
+			'Unsupported file type. Please upload an image or document (PDF, DOC, DOCX)'
+		);
 	}
 
 	return true;
