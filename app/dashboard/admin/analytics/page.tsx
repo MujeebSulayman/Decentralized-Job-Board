@@ -2,7 +2,7 @@
 
 import React from 'react';
 import withAdminLayout from '@/components/hoc/withAdminLayout';
-import { ChartBarIcon, TrendingUpIcon, CurrencyDollarIcon } from '@heroicons/react/24/solid';
+import { ChartBarIcon, ArrowUpIcon, CurrencyDollarIcon } from '@heroicons/react/24/solid';
 
 const AnalyticsPage = () => {
   return (
@@ -24,7 +24,7 @@ const AnalyticsPage = () => {
         <div className="bg-gray-800/40 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">User Growth</h3>
-            <TrendingUpIcon className="h-6 w-6 text-green-400" />
+            <ArrowUpIcon className="h-6 w-6 text-green-400" />
           </div>
           {/* Add user growth visualization */}
         </div>
