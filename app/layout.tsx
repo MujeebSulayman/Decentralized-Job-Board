@@ -23,7 +23,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={spaceGrotesk.className}>
+      <body className={spaceGrotesk.className} suppressHydrationWarning>
         <Providers>{children}</Providers>
         <ToastContainer
           position="top-center"
