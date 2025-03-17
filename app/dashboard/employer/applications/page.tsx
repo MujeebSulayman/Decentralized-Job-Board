@@ -138,11 +138,17 @@ function EmployerApplicationsPage() {
   });
 
   // Calculate statistics
-  const totalApplications = applications.length;
-  const pendingCount = applications.filter(app => app.currentState === ApplicationState.PENDING).length;
-  const shortlistedCount = applications.filter(app => app.currentState === ApplicationState.SHORTLISTED).length;
-  const rejectedCount = applications.filter(app => app.currentState === ApplicationState.REJECTED).length;
-  const hiredCount = applications.filter(app => app.currentState === ApplicationState.HIRED).length;
+  const totalApplications = filteredApplications.length;
+  const pendingCount = filteredApplications.filter(app => Number(app.currentState) === ApplicationState.PENDING).length;
+  const shortlistedCount = filteredApplications.filter(app => Number(app.currentState) === ApplicationState.SHORTLISTED).length;
+  const rejectedCount = filteredApplications.filter(app => Number(app.currentState) === ApplicationState.REJECTED).length;
+  const hiredCount = filteredApplications.filter(app => Number(app.currentState) === ApplicationState.HIRED).length;
+
+  // Calculate percentages
+  const pendingPercentage = totalApplications > 0 ? Math.round((pendingCount / totalApplications) * 100) : 0;
+  const shortlistedPercentage = totalApplications > 0 ? Math.round((shortlistedCount / totalApplications) * 100) : 0;
+  const rejectedPercentage = totalApplications > 0 ? Math.round((rejectedCount / totalApplications) * 100) : 0;
+  const hiredPercentage = totalApplications > 0 ? Math.round((hiredCount / totalApplications) * 100) : 0;
 
   const refreshData = async () => {
     setRefreshing(true);
@@ -189,7 +195,7 @@ function EmployerApplicationsPage() {
               <h3 className="text-white text-2xl font-bold mt-1">{pendingCount}</h3>
             </div>
             <div className="h-12 w-12 bg-blue-500/20 rounded-full flex items-center justify-center">
-              <span className="text-blue-400 text-xl font-bold">{Math.round((pendingCount / totalApplications) * 100) || 0}%</span>
+              <span className="text-blue-400 text-xl font-bold">{pendingPercentage}%</span>
             </div>
           </div>
         </div>
@@ -201,7 +207,7 @@ function EmployerApplicationsPage() {
               <h3 className="text-white text-2xl font-bold mt-1">{shortlistedCount}</h3>
             </div>
             <div className="h-12 w-12 bg-yellow-500/20 rounded-full flex items-center justify-center">
-              <span className="text-yellow-400 text-xl font-bold">{Math.round((shortlistedCount / totalApplications) * 100) || 0}%</span>
+              <span className="text-yellow-400 text-xl font-bold">{shortlistedPercentage}%</span>
             </div>
           </div>
         </div>
@@ -213,7 +219,7 @@ function EmployerApplicationsPage() {
               <h3 className="text-white text-2xl font-bold mt-1">{rejectedCount}</h3>
             </div>
             <div className="h-12 w-12 bg-red-500/20 rounded-full flex items-center justify-center">
-              <span className="text-red-400 text-xl font-bold">{Math.round((rejectedCount / totalApplications) * 100) || 0}%</span>
+              <span className="text-red-400 text-xl font-bold">{rejectedPercentage}%</span>
             </div>
           </div>
         </div>
@@ -225,7 +231,7 @@ function EmployerApplicationsPage() {
               <h3 className="text-white text-2xl font-bold mt-1">{hiredCount}</h3>
             </div>
             <div className="h-12 w-12 bg-green-500/20 rounded-full flex items-center justify-center">
-              <span className="text-green-400 text-xl font-bold">{Math.round((hiredCount / totalApplications) * 100) || 0}%</span>
+              <span className="text-green-400 text-xl font-bold">{hiredPercentage}%</span>
             </div>
           </div>
         </div>
