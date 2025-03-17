@@ -14,10 +14,10 @@ export enum JobType {
 }
 
 export enum ApplicationState {
-	Submitted = 0,
-	Reviewed = 1,
-	EmailSent = 2,
-	Closed = 3,
+	PENDING = 0,
+	SHORTLISTED = 1,
+	REJECTED = 2,
+	HIRED = 3,
 }
 
 export interface CustomField {
@@ -55,6 +55,10 @@ export interface ApplicationStruct {
 	location: string;
 	fieldResponse: string[];
 	cvCID: string;
+	portfolioLink: string;
+	experience: string;
+	expectedSalary: string;
+	github: string;
 	workMode: WorkMode;
 	jobType: JobType;
 	minimumSalary: string;

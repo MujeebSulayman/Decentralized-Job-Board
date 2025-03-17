@@ -62,10 +62,10 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     }
 
     enum ApplicationState {
-        Submitted,
-        Reviewed,
-        EmailSent,
-        Closed
+        PENDING,
+        SHORTLISTED,
+        REJECTED,
+        HIRED
     }
 
     struct CustomField {
@@ -103,6 +103,10 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         string location;
         string[] fieldResponse;
         string cvCID;
+        string portfolioLink;
+        string experience;
+        string expectedSalary;
+        string github;
         WorkMode workMode;
         JobType jobType;
         string minimumSalary;
@@ -146,7 +150,6 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         string memory maximumSalary,
         uint256 expirationDays
     ) public payable nonReentrant returns (uint256) {
-        
         require(
             msg.sender == tx.origin || hasRole(ADMIN_ROLE, msg.sender),
             "Unauthorized to post job"
@@ -299,15 +302,19 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         emit JobExpired(jobId, jobs[jobId].employer);
     }
 
-    function applyForJob(
+    function submitApplication(
         uint256 jobId,
         string memory name,
         string memory email,
         string memory phoneNumber,
         string memory location,
+        string[] memory fieldResponses,
         string memory cvCID,
-        string[] memory fieldResponses
-    ) public nonReentrant {
+        string memory portfolioLink,
+        string memory experience,
+        string memory expectedSalary,
+        string memory github
+    ) public payable nonReentrant {
         require(!isJobExpired(jobId), "Job has expired or been deleted");
         require(jobs[jobId].isOpen, "Job is no longer accepting applications");
 
@@ -330,7 +337,7 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         }
 
         require(
-            applicationStates[jobId][msg.sender] == ApplicationState.Submitted,
+            applicationStates[jobId][msg.sender] == ApplicationState.PENDING,
             "You have already applied to this job"
         );
 
@@ -345,17 +352,21 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
             location: location,
             fieldResponse: fieldResponses,
             cvCID: cvCID,
+            portfolioLink: portfolioLink,
+            experience: experience,
+            expectedSalary: expectedSalary,
+            github: github,
             workMode: job.workMode,
             jobType: job.jobType,
             minimumSalary: job.minimumSalary,
             maximumSalary: job.maximumSalary,
             applicationTimestamp: block.timestamp,
-            currentState: ApplicationState.Submitted
+            currentState: ApplicationState.PENDING
         });
 
         jobApplications[jobId].push(newApplication);
 
-        applicationStates[jobId][msg.sender] = ApplicationState.Submitted;
+        applicationStates[jobId][msg.sender] = ApplicationState.PENDING;
 
         emit ApplicationSubmitted(jobId, msg.sender, name, job.workMode, email);
     }
