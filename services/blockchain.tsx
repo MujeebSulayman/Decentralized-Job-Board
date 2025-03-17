@@ -343,9 +343,13 @@ const getJobApplicantDetails = async (
     const contract = await getEthereumContract();
     const jobApplicants = await contract.getJobApplicants(jobId);
 
+    console.log("Job Applicants:", jobApplicants); // Debug log
+
     const applicantIndex = jobApplicants.findIndex(
       (address: string) => address.toLowerCase() === applicant.toLowerCase()
     );
+
+    console.log("Applicant Index:", applicantIndex); // Debug log
 
     if (applicantIndex === -1) return null;
 
@@ -353,6 +357,8 @@ const getJobApplicantDetails = async (
       jobId,
       applicantIndex
     );
+
+    console.log("Job Applicant Details:", jobApplicantDetails); // Debug log
 
     return jobApplicantDetails;
   } catch (error) {

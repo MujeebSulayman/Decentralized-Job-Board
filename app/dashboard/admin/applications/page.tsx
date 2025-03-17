@@ -29,7 +29,6 @@ function AdminApplicationsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [selectedJob, setSelectedJob] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(true);
   const router = useRouter();
 
@@ -79,6 +78,7 @@ function AdminApplicationsPage() {
     try {
       setRefreshing(true);
       await fetchJobs();
+      await fetchAllApplications();
       toast.success("Data refreshed successfully");
     } catch (error) {
       console.error("Error refreshing data:", error);
@@ -164,14 +164,15 @@ function AdminApplicationsPage() {
 
     const matchesSearch =
       app.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.email.toLowerCase().includes(searchTerm.toLowerCase());
+      app.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.phoneNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesStatus =
       statusFilter === "all" ||
-      app.currentState === parseInt(statusFilter);
-    const matchesJob =
-      selectedJob === "all" ||
-      app.jobId.toString() === selectedJob;
-    return matchesSearch && matchesStatus && matchesJob;
+      Number(app.currentState) === Number(statusFilter);
+
+    return matchesSearch && matchesStatus;
   });
 
   // Calculate statistics
@@ -280,7 +281,7 @@ function AdminApplicationsPage() {
                 <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search by name or email..."
+                  placeholder="Search by name, email, location, or phone..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-white"
@@ -298,22 +299,6 @@ function AdminApplicationsPage() {
                   <option value="1">Shortlisted</option>
                   <option value="2">Rejected</option>
                   <option value="3">Hired</option>
-                </select>
-                <AdjustmentsHorizontalIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-              </div>
-
-              <div className="relative min-w-[200px]">
-                <select
-                  value={selectedJob}
-                  onChange={(e) => setSelectedJob(e.target.value)}
-                  className="w-full appearance-none bg-gray-900/50 border border-gray-700 rounded-md py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-white"
-                >
-                  <option value="all">All Jobs</option>
-                  {jobs.map((job) => (
-                    <option key={job.id} value={job.id.toString()}>
-                      {job.title}
-                    </option>
-                  ))}
                 </select>
                 <AdjustmentsHorizontalIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
               </div>
