@@ -97,6 +97,7 @@ const Header: React.FC = () => {
 						<NavLink href='/post-job'>Create Listing</NavLink>
 						<NavLink href='/applications'>Job Applications</NavLink>
 						<NavLink href='/dashboard/admin'>Admin Dashboard</NavLink>
+						<NavLink href='/dashboard/employer'>Employer Dashboard</NavLink>
 					</nav>
 
 					<div className='hidden md:flex items-center justify-end md:flex-1 lg:w-0'>
@@ -163,6 +164,11 @@ const Header: React.FC = () => {
 											href='/dashboard'
 											mobile>
 											Admin Dashboard
+										</NavLink>
+										<NavLink
+											href='/dashboard'
+											mobile>
+											Employer Dashboard
 										</NavLink>
 									</nav>
 								</div>
