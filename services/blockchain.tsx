@@ -228,8 +228,12 @@ const applyForJob = async (
   email: string,
   phoneNumber: string,
   location: string,
+  fieldResponses: string[],
   cvCID: string,
-  fieldResponses: string[]
+  portfolioLink: string,
+  experience: string,
+  expectedSalary: string,
+  github: string
 ): Promise<any> => {
   if (!ethereum) {
     throw new Error("Please install MetaMask to use this application.");
@@ -237,14 +241,18 @@ const applyForJob = async (
 
   try {
     const contract = await getEthereumContract();
-    const tx = await contract.applyForJob(
+    const tx = await contract.submitApplication(
       jobId,
       name,
       email,
       phoneNumber,
       location,
+      fieldResponses,
       cvCID,
-      fieldResponses
+      portfolioLink,
+      experience,
+      expectedSalary,
+      github
     );
     const receipt = await tx.wait();
     return receipt;
@@ -405,6 +413,47 @@ const getServiceFee = async (): Promise<string> => {
     return fromWei(fee);
   } catch (error) {
     console.error("Error getting service fee:", error);
+    throw error;
+  }
+};
+
+export const submitApplication = async (
+  jobId: number,
+  name: string,
+  email: string,
+  phoneNumber: string,
+  location: string,
+  fieldResponses: string[],
+  cvCID: string,
+  portfolioLink: string,
+  experience: string,
+  expectedSalary: string,
+  github: string
+) => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+  try {
+    const contract = await getEthereumContract();
+    const tx = await contract.submitApplication(
+      jobId,
+      name,
+      email,
+      phoneNumber,
+      location,
+      fieldResponses,
+      cvCID,
+      portfolioLink,
+      experience,
+      expectedSalary,
+      github
+    );
+    await tx.wait();
+    return tx;
+  } catch (error) {
+    console.error("Error submitting application:", error);
     throw error;
   }
 };
