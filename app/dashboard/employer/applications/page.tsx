@@ -285,141 +285,143 @@ function EmployerApplicationsPage() {
             <p className="text-sm text-gray-500">Try adjusting your filters or search criteria</p>
           </div>
         )}
-      </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-700">
-          <thead className="bg-gray-800/50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Applicant
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Job
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Contact
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Applied
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Status
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-gray-800/20 divide-y divide-gray-700">
-            {filteredApplications.length > 0 ? (
-              filteredApplications.map((application) => {
-                const job = jobs.find((j) => j.id === application.jobId);
-                return (
-                  <tr
-                    key={`${application.jobId}-${application.applicant}`}
-                    className="hover:bg-gray-700/30 transition-colors cursor-pointer"
-                    onClick={() => handleViewApplication(application.jobId, application.applicant)}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 bg-green-900/30 rounded-full flex items-center justify-center border border-green-500/30">
-                          <span className="text-green-400 font-medium text-sm">
-                            {application.name && application.name.substring(0, 2).toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-white">{application.name || 'Unknown'}</div>
-                          <div className="text-sm text-gray-400">{application.location || 'Unknown location'}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        {job?.logoCID && (
-                          <div className="flex-shrink-0 h-8 w-8 mr-3">
-                            <img
-                              src={getIPFSGatewayUrl(job.logoCID)}
-                              alt={job.title || 'Job'}
-                              className="h-8 w-8 rounded-full object-cover"
-                            />
+        {filteredApplications.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-700">
+              <thead className="bg-gray-800/50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Applicant
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Job
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Applied
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-gray-800/20 divide-y divide-gray-700">
+                {filteredApplications.map((application) => {
+                  const job = jobs.find((j) => j.id === application.jobId);
+                  return (
+                    <tr
+                      key={`${application.jobId}-${application.applicant}`}
+                      className="hover:bg-gray-700/30 transition-colors cursor-pointer"
+                      onClick={() => handleViewApplication(application.jobId, application.applicant)}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 bg-green-900/30 rounded-full flex items-center justify-center border border-green-500/30">
+                            <span className="text-green-400 font-medium text-sm">
+                              {application.name && application.name.substring(0, 2).toUpperCase()}
+                            </span>
                           </div>
-                        )}
-                        <div className="text-sm text-white">{job?.title || "Unknown Job"}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-white">{application.email || 'No email'}</div>
-                      <div className="text-sm text-gray-400">{application.phoneNumber || 'No phone'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                      {formatDistanceToNow(
-                        new Date(Number(BigInt(application.applicationTimestamp) * BigInt(1000))),
-                        { addSuffix: true }
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(application.currentState)}`}>
-                        {safeGetApplicationState(application.currentState)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => handleViewApplication(application.jobId, application.applicant)}
-                          className="p-1.5 bg-purple-500/20 text-purple-400 rounded-md hover:bg-purple-500/30 transition-colors"
-                          title="View Application"
-                        >
-                          <EyeIcon className="h-4 w-4" />
-                        </button>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-white">{application.name || 'Unknown'}</div>
+                            <div className="text-sm text-gray-400">{application.location || 'Unknown location'}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {job?.logoCID && (
+                            <div className="flex-shrink-0 h-8 w-8 mr-3">
+                              <img
+                                src={getIPFSGatewayUrl(job.logoCID)}
+                                alt={job.title || 'Job'}
+                                className="h-8 w-8 rounded-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40';
+                                }}
+                              />
+                            </div>
+                          )}
+                          <div className="text-sm text-white">{job?.title || "Unknown Job"}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-white">{application.email || 'No email'}</div>
+                        <div className="text-sm text-gray-400">{application.phoneNumber || 'No phone'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                        {application.applicationTimestamp ? formatDistanceToNow(
+                          new Date(Number(BigInt(application.applicationTimestamp) * BigInt(1000))),
+                          { addSuffix: true }
+                        ) : 'Unknown date'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(application.currentState)}`}>
+                          {safeGetApplicationState(application.currentState)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => handleViewApplication(application.jobId, application.applicant)}
+                            className="p-1.5 bg-purple-500/20 text-purple-400 rounded-md hover:bg-purple-500/30 transition-colors"
+                            title="View Application"
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                          </button>
 
-                        <button
-                          onClick={() => handleViewCV(application.cvCID)}
-                          className="p-1.5 bg-blue-500/20 text-blue-400 rounded-md hover:bg-blue-500/30 transition-colors"
-                          title="View CV"
-                        >
-                          <DocumentArrowDownIcon className="h-4 w-4" />
-                        </button>
+                          <button
+                            onClick={() => handleViewCV(application.cvCID)}
+                            className="p-1.5 bg-blue-500/20 text-blue-400 rounded-md hover:bg-blue-500/30 transition-colors"
+                            title="View CV"
+                          >
+                            <DocumentArrowDownIcon className="h-4 w-4" />
+                          </button>
 
-                        <button
-                          onClick={() => handleContactApplicant(application.email)}
-                          className="p-1.5 bg-green-500/20 text-green-400 rounded-md hover:bg-green-500/30 transition-colors"
-                          title="Contact Applicant"
-                        >
-                          <EnvelopeIcon className="h-4 w-4" />
-                        </button>
+                          <button
+                            onClick={() => handleContactApplicant(application.email)}
+                            className="p-1.5 bg-green-500/20 text-green-400 rounded-md hover:bg-green-500/30 transition-colors"
+                            title="Contact Applicant"
+                          >
+                            <EnvelopeIcon className="h-4 w-4" />
+                          </button>
 
-                        <select
-                          value={application.currentState.toString()}
-                          onChange={(e) =>
-                            handleUpdateStatus(
-                              application.jobId,
-                              application.applicant,
-                              parseInt(e.target.value)
-                            )
-                          }
-                          className="bg-gray-900 border border-gray-700 rounded-md py-1 pl-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-white"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <option value="0">Pending</option>
-                          <option value="1">Shortlisted</option>
-                          <option value="2">Rejected</option>
-                          <option value="3">Hired</option>
-                        </select>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-400">
-                  No applications found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                          <select
+                            value={application.currentState !== undefined ? application.currentState.toString() : "0"}
+                            onChange={(e) => {
+                              try {
+                                handleUpdateStatus(
+                                  application.jobId,
+                                  application.applicant,
+                                  parseInt(e.target.value)
+                                );
+                              } catch (error) {
+                                console.error("Error updating status:", error);
+                                toast.error("Failed to update status");
+                              }
+                            }}
+                            className="bg-gray-900 border border-gray-700 rounded-md py-1 pl-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-white"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <option value="0">Pending</option>
+                            <option value="1">Shortlisted</option>
+                            <option value="2">Rejected</option>
+                            <option value="3">Hired</option>
+                          </select>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
