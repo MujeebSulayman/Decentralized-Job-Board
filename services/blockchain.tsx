@@ -228,8 +228,8 @@ const applyForJob = async (
   email: string,
   phoneNumber: string,
   location: string,
-  fieldResponses: string[],
-  cvCID: string
+  cvCID: string,
+  fieldResponses: string[]
 ): Promise<any> => {
   if (!ethereum) {
     throw new Error("Please install MetaMask to use this application.");
@@ -243,8 +243,8 @@ const applyForJob = async (
       email,
       phoneNumber,
       location,
-      fieldResponses,
-      cvCID
+      cvCID,
+      fieldResponses
     );
     const receipt = await tx.wait();
     return receipt;
