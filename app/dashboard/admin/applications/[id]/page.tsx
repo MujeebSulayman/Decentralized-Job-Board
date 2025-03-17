@@ -62,6 +62,8 @@ function AdminApplicationDetailPage() {
                 getJobApplicantDetails(Number(jobId), applicantAddress)
             ]);
 
+            console.log("Application Data:", applicationData);
+
             setJob(jobData);
             setApplication(applicationData);
         } catch (error) {
@@ -418,29 +420,138 @@ function AdminApplicationDetailPage() {
 
                         {activeTab === 'responses' && (
                             <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
-                                <h3 className="text-lg font-semibold text-white mb-4">Application Responses</h3>
+                                <h3 className="text-lg font-semibold text-white mb-4">Application Details</h3>
 
-                                {job.customField.length === 0 ? (
-                                    <div className="bg-gray-900/30 rounded-lg p-6 text-center">
-                                        <p className="text-gray-400">No custom questions were asked for this job</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-6">
-                                        {job.customField.map((field, index) => (
-                                            <div key={index} className="bg-gray-900/30 rounded-lg p-5">
-                                                <h4 className="text-sm font-medium text-gray-300 mb-3">
-                                                    <span className="inline-block bg-gray-700/50 text-gray-400 rounded-full h-6 w-6 text-xs flex items-center justify-center mr-2">
-                                                        {index + 1}
-                                                    </span>
-                                                    {field.fieldName}
-                                                </h4>
-                                                <div className="pl-8">
-                                                    <p className="text-white whitespace-pre-wrap">{application.fieldResponse[index] || "No response provided"}</p>
-                                                </div>
+                                {/* Basic Information */}
+                                <div className="space-y-6 mb-8">
+                                    <div className="bg-gray-900/30 rounded-lg p-5">
+                                        <h4 className="text-sm font-medium text-gray-300 mb-4 flex items-center">
+                                            <UserIcon className="h-5 w-5 text-gray-400 mr-2" />
+                                            Basic Information
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1">Full Name</p>
+                                                <p className="text-white">{application.name}</p>
                                             </div>
-                                        ))}
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1">Location</p>
+                                                <p className="text-white">{application.location || "Not specified"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1">Email</p>
+                                                <p className="text-white">{application.email}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1">Phone Number</p>
+                                                <p className="text-white">{application.phoneNumber || "Not provided"}</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                )}
+
+                                    {/* Professional Information */}
+                                    <div className="bg-gray-900/30 rounded-lg p-5">
+                                        <h4 className="text-sm font-medium text-gray-300 mb-4 flex items-center">
+                                            <BriefcaseIcon className="h-5 w-5 text-gray-400 mr-2" />
+                                            Professional Information
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1">Experience</p>
+                                                <p className="text-white whitespace-pre-wrap">
+                                                    {application?.experience ? application.experience : "Not provided"}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1">Expected Salary</p>
+                                                <p className="text-white">
+                                                    {application?.expectedSalary ? application.expectedSalary : "Not specified"}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1">Portfolio Link</p>
+                                                <p className="text-white">
+                                                    {application?.portfolioLink ? (
+                                                        <a
+                                                            href={application.portfolioLink}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-blue-400 hover:text-blue-300"
+                                                        >
+                                                            View Portfolio
+                                                        </a>
+                                                    ) : "Not provided"}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1">GitHub Profile</p>
+                                                <p className="text-white">
+                                                    {application?.github ? (
+                                                        <a
+                                                            href={application.github}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-blue-400 hover:text-blue-300"
+                                                        >
+                                                            View GitHub
+                                                        </a>
+                                                    ) : "Not provided"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* CV/Resume */}
+                                    <div className="bg-gray-900/30 rounded-lg p-5">
+                                        <h4 className="text-sm font-medium text-gray-300 mb-4 flex items-center">
+                                            <DocumentArrowDownIcon className="h-5 w-5 text-gray-400 mr-2" />
+                                            CV/Resume
+                                        </h4>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-white">
+                                                {application.cvCID ? "CV has been uploaded" : "No CV uploaded"}
+                                            </p>
+                                            {application.cvCID && (
+                                                <button
+                                                    onClick={handleViewCV}
+                                                    className="flex items-center px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors"
+                                                >
+                                                    <DocumentArrowDownIcon className="h-5 w-5 mr-1.5" />
+                                                    View CV
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Custom Field Responses */}
+                                    {job.customField.length > 0 && (
+                                        <div className="bg-gray-900/30 rounded-lg p-5">
+                                            <h4 className="text-sm font-medium text-gray-300 mb-4 flex items-center">
+                                                <DocumentTextIcon className="h-5 w-5 text-gray-400 mr-2" />
+                                                Additional Questions
+                                            </h4>
+                                            <div className="space-y-4">
+                                                {job.customField.map((field, index) => (
+                                                    <div key={index} className="border-b border-gray-700/50 last:border-0 pb-4 last:pb-0">
+                                                        <div className="flex items-center mb-2">
+                                                            <span className={`inline-block w-2 h-2 rounded-full mr-2 ${field.isRequired ? 'bg-red-500' : 'bg-gray-500'
+                                                                }`}></span>
+                                                            <p className="text-sm font-medium text-gray-300">
+                                                                {field.fieldName}
+                                                                {field.isRequired && (
+                                                                    <span className="text-red-400 text-xs ml-1">(Required)</span>
+                                                                )}
+                                                            </p>
+                                                        </div>
+                                                        <p className="text-white whitespace-pre-wrap pl-4">
+                                                            {application.fieldResponse[index] || "No response provided"}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
