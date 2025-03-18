@@ -206,16 +206,6 @@ function AdminApplicationsPage() {
               View and manage all job applications across the platform
             </p>
           </div>
-          <div className="mt-4 md:mt-0">
-            <button
-              onClick={refreshData}
-              disabled={refreshing}
-              className="flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-md text-white transition-colors"
-            >
-              <ArrowPathIcon className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Refreshing...' : 'Refresh Data'}
-            </button>
-          </div>
         </div>
 
         {/* Statistics Cards */}
@@ -459,7 +449,7 @@ function AdminApplicationsPage() {
     );
   } catch (error) {
     console.error("Error rendering applications page:", error);
-  return (
+    return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center">
         <div className="text-red-500 text-xl mb-4">Something went wrong</div>
         <p className="text-gray-400 mb-6">There was an error loading the applications page</p>

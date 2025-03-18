@@ -185,18 +185,8 @@ function JobApplicationsPage() {
                             )}
                         </div>
                         <p className="text-gray-400 mt-1">
-                            Applications for {job?.title || "this job"}
+                            Applications for {job?.title || "this job"} from {job?.orgName || "employer"}
                         </p>
-                    </div>
-                    <div className="mt-4 md:mt-0">
-                        <button
-                            onClick={refreshData}
-                            disabled={refreshing}
-                            className="flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-md text-white transition-colors"
-                        >
-                            <ArrowPathIcon className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                            {refreshing ? 'Refreshing...' : 'Refresh Data'}
-                        </button>
                     </div>
                 </div>
             </div>

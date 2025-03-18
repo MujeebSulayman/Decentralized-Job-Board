@@ -284,14 +284,6 @@ const JobsPage = () => {
         </div>
         <div className="flex space-x-3">
           <button
-            onClick={refreshData}
-            disabled={refreshing}
-            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors duration-200 flex items-center"
-          >
-            <ArrowPathIcon className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Refreshing...' : 'Refresh'}
-          </button>
-          <button
             onClick={() => router.push("/dashboard/admin/jobs/create")}
             className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200 flex items-center"
           >

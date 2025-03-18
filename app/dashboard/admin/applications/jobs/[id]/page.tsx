@@ -200,15 +200,6 @@ function AdminJobApplicationsPage() {
                     </div>
                     <div className="mt-4 md:mt-0 flex space-x-3">
                         <button
-                            onClick={refreshData}
-                            disabled={refreshing}
-                            className="flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-md text-white transition-colors"
-                        >
-                            <ArrowPathIcon className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                            {refreshing ? 'Refreshing...' : 'Refresh Data'}
-                        </button>
-
-                        <button
                             onClick={() => router.push('/dashboard/admin/applications')}
                             className="flex items-center px-4 py-2 bg-blue-800/40 hover:bg-blue-700/50 rounded-md text-white transition-colors"
                         >
