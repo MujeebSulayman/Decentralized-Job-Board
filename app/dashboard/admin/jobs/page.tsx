@@ -20,7 +20,8 @@ import {
   XCircleIcon,
   TrashIcon,
   EyeIcon,
-  FunnelIcon
+  FunnelIcon,
+  ClipboardDocumentCheckIcon
 } from "@heroicons/react/24/outline";
 
 interface ModalProps {
@@ -141,6 +142,12 @@ const JobsPage = () => {
   // Navigate to job details when card is clicked
   const handleJobClick = (jobId: number) => {
     router.push(`/dashboard/admin/jobs/${jobId}`);
+  };
+
+  // Navigate to job applications
+  const handleViewApplications = (e: React.MouseEvent, jobId: number) => {
+    e.stopPropagation(); // Prevent card click
+    router.push(`/dashboard/admin/applications/jobs/${jobId}`);
   };
 
   const getStatusBadge = (job: JobStruct) => {
@@ -448,6 +455,15 @@ const JobsPage = () => {
                 >
                   <EyeIcon className="h-4 w-4" />
                 </button>
+
+                <button
+                  onClick={(e) => handleViewApplications(e, job.id)}
+                  className="p-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded transition-colors duration-200 flex items-center"
+                  title="View Applications"
+                >
+                  <ClipboardDocumentCheckIcon className="h-4 w-4" />
+                </button>
+
                 {job.isOpen && !job.expired && (
                   <button
                     onClick={(e) => handleCloseJob(e, job.id, job.title)}

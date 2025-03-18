@@ -86,6 +86,13 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({
       icon: ClipboardDocumentCheckIcon,
       group: "Job Management"
     },
+    {
+      path: "/dashboard/admin/applications/by-job",
+      text: "Job Applications",
+      icon: DocumentCheckIcon,
+      group: "Job Management",
+      badge: "New"
+    },
 
     // User Management
     {
@@ -170,11 +177,11 @@ const AdminDashboardLayout: React.FC<{ children: React.ReactNode }> = ({
       {/* Header (Fixed) */}
       <div className="px-6 py-4 border-b border-gray-800/30 flex items-center justify-between">
         <Link href="/">
-        <div className="flex items-center">
-          <SparklesIcon className="h-8 w-8 text-green-500 mr-2" />
-          <span className="text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
-            HemBoard
-          </span>
+          <div className="flex items-center">
+            <SparklesIcon className="h-8 w-8 text-green-500 mr-2" />
+            <span className="text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
+              HemBoard
+            </span>
           </div>
         </Link>
         <button
