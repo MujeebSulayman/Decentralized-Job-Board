@@ -459,7 +459,7 @@ function AdminApplicationsPage() {
     );
   } catch (error) {
     console.error("Error rendering applications page:", error);
-    return (
+  return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center">
         <div className="text-red-500 text-xl mb-4">Something went wrong</div>
         <p className="text-gray-400 mb-6">There was an error loading the applications page</p>
