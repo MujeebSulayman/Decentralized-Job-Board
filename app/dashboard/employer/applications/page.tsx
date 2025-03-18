@@ -169,20 +169,10 @@ function EmployerApplicationsPage() {
     <div className="w-full">
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">My Job Applications</h1>
+          <h1 className="text-2xl font-bold text-white">Your Job Applications</h1>
           <p className="text-gray-400 mt-1">
-            View and manage applications for your job postings
+            View and manage applications to your job postings
           </p>
-        </div>
-        <div className="mt-4 md:mt-0">
-          <button
-            onClick={refreshData}
-            disabled={refreshing}
-            className="flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-md text-white transition-colors"
-          >
-            <ArrowPathIcon className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Refreshing...' : 'Refresh Data'}
-          </button>
         </div>
       </div>
 
