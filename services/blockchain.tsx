@@ -20,6 +20,8 @@ const fromWei = (num: number | string | null): string => {
 let ethereum: any;
 let tx: any;
 
+
+
 if (typeof window !== "undefined") ethereum = (window as any).ethereum;
 
 const getEthereumContract = async () => {
