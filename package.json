@@ -62,6 +62,7 @@
     "eslint-config-next": "15.1.5",
     "hardhat": "^2.22.18",
     "hardhat-gas-reporter": "^1.0.8",
+    "pino-pretty": "^13.0.0",
     "postcss": "^8",
     "solidity-coverage": "^0.8.1",
     "tailwind-scrollbar": "^3.1.0",
