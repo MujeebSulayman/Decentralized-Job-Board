@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { HiOutlineMenuAlt4 } from "react-icons/hi";
 import { IoClose } from "react-icons/io5";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useAccount } from "wagmi";
 
 interface NavLinkProps {
   href: string;
@@ -52,7 +53,10 @@ const Header: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [scrolled, setScrolled] = useState<boolean>(false);
   const [pathname, setPathname] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isEmployer, setIsEmployer] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { address } = useAccount();
 
   // Get current pathname for active link detection
   useEffect(() => {
@@ -61,6 +65,42 @@ const Header: React.FC = () => {
       setPathname(window.location.pathname);
     }
   }, []);
+
+  // Check user roles
+  useEffect(() => {
+    if (!address) {
+      setIsAdmin(false);
+      setIsEmployer(false);
+      return;
+    }
+
+    // For demo purposes, we're using a simple check
+    // In a real app, you would check against your contract or backend
+    // This is just a placeholder implementation
+    const checkRoles = async () => {
+      try {
+        // Check if the user has admin role
+        // This would typically be a call to your contract
+        const adminAddresses = [
+          "0x123...", // Replace with actual admin addresses
+          address.toLowerCase() // For testing, consider the connected user as admin
+        ];
+        setIsAdmin(adminAddresses.includes(address.toLowerCase()));
+
+        // Check if the user has employer role
+        // This would typically be a call to your contract
+        const employerAddresses = [
+          "0x456...", // Replace with actual employer addresses
+          address.toLowerCase() // For testing, consider the connected user as employer
+        ];
+        setIsEmployer(employerAddresses.includes(address.toLowerCase()));
+      } catch (error) {
+        console.error("Error checking user roles:", error);
+      }
+    };
+
+    checkRoles();
+  }, [address]);
 
   // Handle scroll effect
   useEffect(() => {
@@ -148,30 +188,42 @@ const Header: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
-            <NavLink href="/jobs" isActive={pathname === "/jobs"}>
-              Verified Jobs
+            <NavLink 
+              href="/jobs" 
+              isActive={pathname === "/jobs"}
+            >
+              Browse Jobs
             </NavLink>
-            <NavLink href="/post" isActive={pathname === "/post"}>
+            <NavLink 
+              href="/post" 
+              isActive={pathname === "/post"}
+            >
               Create Job
             </NavLink>
             <NavLink
               href="/applications"
               isActive={pathname === "/applications"}
             >
-              Job Applications
+              My Applications
             </NavLink>
-            <NavLink
-              href="/dashboard/admin"
-              isActive={pathname === "/dashboard/admin"}
-            >
-              Admin Dashboard
-            </NavLink>
-            <NavLink
-              href="/dashboard/employer"
-              isActive={pathname === "/dashboard/employer"}
-            >
-              Employer Dashboard
-            </NavLink>
+            {/* Only show admin dashboard to admin users */}
+            {isAdmin && (
+              <NavLink
+                href="/dashboard/admin"
+                isActive={pathname.startsWith("/dashboard/admin")}
+              >
+                Admin Dashboard
+              </NavLink>
+            )}
+            {/* Only show employer dashboard to employer users */}
+            {isEmployer && (
+              <NavLink
+                href="/dashboard/employer"
+                isActive={pathname.startsWith("/dashboard/employer")}
+              >
+                Employer Dashboard
+              </NavLink>
+            )}
           </nav>
 
           {/* Desktop Connect Button */}
@@ -200,10 +252,10 @@ const Header: React.FC = () => {
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsOpen(!isOpen)}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-green-500 transition-all duration-200"
-              aria-expanded={isOpen}
+              aria-expanded="false"
             >
               <span className="sr-only">
-                {isOpen ? "Close menu" : "Open menu"}
+                {isOpen ? "Close main menu" : "Open main menu"}
               </span>
               <HiOutlineMenuAlt4 className="h-6 w-6" aria-hidden="true" />
             </motion.button>
@@ -227,12 +279,13 @@ const Header: React.FC = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.1 }}
             >
+              {/* Filter navigation items based on user role */}
               {[
-                { href: "/jobs", label: "Verified Jobs" },
+                { href: "/jobs", label: "Browse Jobs" },
                 { href: "/post", label: "Create Job" },
-                { href: "/applications", label: "Job Applications" },
-                { href: "/dashboard/admin", label: "Admin Dashboard" },
-                { href: "/dashboard/employer", label: "Employer Dashboard" },
+                { href: "/applications", label: "My Applications" },
+                ...(isAdmin ? [{ href: "/dashboard/admin", label: "Admin Dashboard" }] : []),
+                ...(isEmployer ? [{ href: "/dashboard/employer", label: "Employer Dashboard" }] : []),
               ].map((item, index) => (
                 <motion.div
                   key={index}
@@ -242,9 +295,15 @@ const Header: React.FC = () => {
                 >
                   <Link 
                     href={item.href}
-                    className={`block px-5 py-3.5 text-base font-medium rounded-md mx-2 my-1 transition-all duration-200 ${pathname === item.href 
-                      ? "text-white bg-gradient-to-r from-green-500/20 to-blue-500/20 border-l-2 border-blue-500" 
-                      : "text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-green-400"}`}
+                    className={`block px-5 py-3.5 text-base font-medium rounded-md mx-2 my-1 transition-all duration-200 ${
+                      (item.href === "/dashboard/admin" || item.href === "/dashboard/employer") 
+                        ? (pathname.startsWith(item.href) 
+                            ? "text-white bg-gradient-to-r from-green-500/20 to-blue-500/20 border-l-2 border-blue-500" 
+                            : "text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-green-400")
+                        : (pathname === item.href 
+                            ? "text-white bg-gradient-to-r from-green-500/20 to-blue-500/20 border-l-2 border-blue-500" 
+                            : "text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-green-400")
+                    }`}
                     onClick={() => setIsOpen(false)}
                   >
                     {item.label}

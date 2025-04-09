@@ -355,7 +355,7 @@ const PostPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black pt-20 pb-20">
       <Header />
       <div className="max-w-5xl mx-auto px-4 py-24 sm:px-6 lg:px-8">
         <div className="bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-purple-500/20">
