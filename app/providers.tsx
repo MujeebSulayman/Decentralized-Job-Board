@@ -29,10 +29,23 @@ import {
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 
+// Create a custom Sepolia configuration that uses our Next.js proxy to avoid CORS issues
+const customSepolia = {
+	...sepolia,
+	rpcUrls: {
+		default: {
+			http: ['/api/eth'],
+		},
+		public: {
+			http: ['/api/eth'],
+		},
+	},
+};
+
 const config = getDefaultConfig({
 	appName: 'HemBoard',
 	projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID!,
-	chains: [mainnet, sepolia, polygon, optimism, arbitrum, base],
+	chains: [mainnet, customSepolia, polygon, optimism, arbitrum, base],
 	ssr: true,
 	wallets: [
 		{

@@ -22,6 +22,14 @@ const nextConfig = {
 			},
 		],
 	},
+	async rewrites() {
+		return [
+			{
+				source: '/api/eth/:path*',
+				destination: 'https://ethereum-sepolia.publicnode.com/:path*',
+			},
+		];
+	},
 };
 
 module.exports = nextConfig;

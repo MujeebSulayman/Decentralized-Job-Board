@@ -177,17 +177,19 @@ const Header: React.FC = () => {
           {/* Desktop Connect Button */}
           <div className="hidden md:flex items-center">
             <div className="ml-4 flex items-center">
-              <ConnectButton
-                showBalance={false}
-                accountStatus={{
-                  smallScreen: "avatar",
-                  largeScreen: "full",
-                }}
-                chainStatus={{
-                  smallScreen: "icon",
-                  largeScreen: "full",
-                }}
-              />
+              <div className="bg-gray-800/40 backdrop-blur-sm p-1.5 rounded-lg shadow-inner border border-gray-700/30 hover:border-gray-600/50 transition-all duration-300">
+                <ConnectButton
+                  showBalance={false}
+                  accountStatus={{
+                    smallScreen: "avatar",
+                    largeScreen: "full",
+                  }}
+                  chainStatus={{
+                    smallScreen: "icon",
+                    largeScreen: "full",
+                  }}
+                />
+              </div>
             </div>
           </div>
 
@@ -209,92 +211,67 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu - Enhanced Dropdown with Animations */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            ref={menuRef}
-            className="fixed inset-0 z-40 md:hidden bg-gray-900/80 backdrop-blur-xl overflow-y-auto"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+          <motion.div 
+            className="absolute top-16 left-0 right-0 bg-gray-900/95 backdrop-blur-sm shadow-xl z-50 md:hidden border-t border-gray-800/50 overflow-hidden"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
           >
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between px-4 pt-5 pb-2 border-b border-gray-800/30">
-                <Link
-                  href="/"
-                  className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500"
-                  onClick={() => setIsOpen(false)}
+            <motion.div 
+              className="py-3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+            >
+              {[
+                { href: "/jobs", label: "Verified Jobs" },
+                { href: "/post-job", label: "Create Listing" },
+                { href: "/applications", label: "Job Applications" },
+                { href: "/dashboard/admin", label: "Admin Dashboard" },
+                { href: "/dashboard/employer", label: "Employer Dashboard" },
+              ].map((item, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.05 * index + 0.1 }}
                 >
-                  HemBoard
-                </Link>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setIsOpen(false)}
-                  className="rounded-full p-2 inline-flex items-center justify-center text-gray-300 hover:text-white hover:bg-gray-800/50 focus:outline-none transition-colors duration-200"
-                >
-                  <span className="sr-only">Close menu</span>
-                  <IoClose className="h-6 w-6" aria-hidden="true" />
-                </motion.button>
-              </div>
-
-              <div className="px-4 py-6 space-y-1 flex-grow">
-                <motion.nav
-                  className="grid gap-y-2"
-                  initial="hidden"
-                  animate="visible"
-                  variants={{
-                    hidden: { opacity: 0 },
-                    visible: {
-                      opacity: 1,
-                      transition: {
-                        staggerChildren: 0.07,
-                      },
-                    },
-                  }}
-                >
-                  {[
-                    { href: "/jobs", label: "Verified Jobs" },
-                    { href: "/post-job", label: "Create Listing" },
-                    { href: "/applications", label: "Job Applications" },
-                    { href: "/dashboard/admin", label: "Admin Dashboard" },
-                    {
-                      href: "/dashboard/employer",
-                      label: "Employer Dashboard",
-                    },
-                  ].map((item, index) => (
-                    <motion.div
-                      key={index}
-                      variants={{
-                        hidden: { opacity: 0, y: 10 },
-                        visible: { opacity: 1, y: 0 },
-                      }}
-                    >
-                      <NavLink
-                        href={item.href}
-                        mobile
-                        isActive={pathname === item.href}
-                        onClick={() => setIsOpen(false)}
-                      >
-                        {item.label}
-                      </NavLink>
-                    </motion.div>
-                  ))}
-                </motion.nav>
-              </div>
-
-              <div className="px-4 py-4 border-t border-gray-800/30">
-                <div className="w-full">
-                  <ConnectButton
-                    showBalance={false}
-                    accountStatus="full"
-                    chainStatus="icon"
-                  />
+                  <Link 
+                    href={item.href}
+                    className={`block px-5 py-3.5 text-base font-medium rounded-md mx-2 my-1 transition-all duration-200 ${pathname === item.href 
+                      ? "text-white bg-gradient-to-r from-green-500/20 to-blue-500/20 border-l-2 border-blue-500" 
+                      : "text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-green-400"}`}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+            
+            <motion.div 
+              className="px-4 py-5 mt-2 border-t border-gray-800/30 bg-gray-800/30"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="flex justify-center">
+                <div className="w-full max-w-xs bg-gradient-to-br from-gray-900/80 to-gray-800/80 p-3.5 rounded-xl shadow-lg border border-gray-700/30">
+                  <div className="flex flex-col space-y-2">
+                    <div className="text-sm text-gray-400 font-medium mb-1 text-center">Connect Wallet</div>
+                    <ConnectButton
+                      showBalance={false}
+                      accountStatus="full"
+                      chainStatus="icon"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
