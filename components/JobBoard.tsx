@@ -134,9 +134,6 @@ const JobBoard = () => {
 		setActiveFilter(filter);
 	};
 
-	const handleLocationFilter = (location: string) => {
-		setActiveLocation(location);
-	};
 
 	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setSearchQuery(e.target.value);
@@ -171,25 +168,15 @@ const JobBoard = () => {
 		'Solana',
 
 		// Non-Technical Roles
-		'Non Tech',
 		'Design',
 		'Marketing',
-		'Sales',
 		'Community',
 		'Product',
 		'Management & Finance',
-		'Customer Support',
-		'Content Writer',
-		'Human Resources',
-		'Legal',
 		'Compliance',
-		'Anti Money Laundering',
-
 		// Other
 		'Trading',
 		'Crypto',
-		'No-Code',
-		'Memes',
 	];
 
 	const workModes = ['All Locations', 'Remote', 'Hybrid', 'Onsite'];
