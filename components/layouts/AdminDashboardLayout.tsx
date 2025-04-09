@@ -25,6 +25,7 @@ import {
   DocumentTextIcon,
 } from "@heroicons/react/24/solid";
 import Link from "next/link";
+import Header from "@/components/Header";
 
 interface NavItem {
   path: string;

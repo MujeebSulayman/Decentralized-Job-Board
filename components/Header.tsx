@@ -151,8 +151,8 @@ const Header: React.FC = () => {
             <NavLink href="/jobs" isActive={pathname === "/jobs"}>
               Verified Jobs
             </NavLink>
-            <NavLink href="/post-job" isActive={pathname === "/post-job"}>
-              Create Listing
+            <NavLink href="/post" isActive={pathname === "/post"}>
+              Create Job
             </NavLink>
             <NavLink
               href="/applications"
@@ -229,7 +229,7 @@ const Header: React.FC = () => {
             >
               {[
                 { href: "/jobs", label: "Verified Jobs" },
-                { href: "/post-job", label: "Create Listing" },
+                { href: "/post", label: "Create Job" },
                 { href: "/applications", label: "Job Applications" },
                 { href: "/dashboard/admin", label: "Admin Dashboard" },
                 { href: "/dashboard/employer", label: "Employer Dashboard" },

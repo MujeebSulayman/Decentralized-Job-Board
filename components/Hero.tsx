@@ -86,10 +86,10 @@ const Hero = () => {
             </button>
           </Link>
      
-          <Link href="/post-job" className="w-full sm:w-auto group">
-            <button className="w-full sm:w-auto px-8 py-3.5 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-md transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 shadow-md hover:shadow-gray-500/50 group-hover:ring-2 group-hover:ring-gray-500/50">
+          <Link href="/post" className="w-full sm:w-auto group">
+            <button className="w-full sm:w-auto px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 shadow-md hover:shadow-blue-500/50 group-hover:ring-2 group-hover:ring-blue-500/50">
               <span className="flex items-center justify-center">
-                Post a Job
+                Create Job
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 group-hover:rotate-45 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
