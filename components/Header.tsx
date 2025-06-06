@@ -172,7 +172,7 @@ const Header: React.FC = () => {
             <Link
               href="/"
               className="group flex items-center"
-              aria-label="HemSniper Home"
+              aria-label="HemBoard Home"
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -180,7 +180,7 @@ const Header: React.FC = () => {
                 transition={{ duration: 0.5, type: "spring" }}
               >
                 <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 tracking-tight group-hover:from-green-500 group-hover:to-blue-600 transition-all duration-300">
-              HemSniper
+                  HemBoard
                 </span>
               </motion.div>
             </Link>
