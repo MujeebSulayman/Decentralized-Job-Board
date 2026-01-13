@@ -1,43 +1,42 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity >=0.8.28 <0.9.0;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
-    using Counters for Counters.Counter;
-    Counters.Counter private totalJobs;
-    Counters.Counter private totalApplications;
+contract JobBoardUpgradeable is
+    Initializable,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    AccessControlUpgradeable
+{
+    using CountersUpgradeable for CountersUpgradeable.Counter;
+
+    CountersUpgradeable.Counter private totalJobs;
+    CountersUpgradeable.Counter private totalApplications;
 
     uint256 public serviceFee;
 
     bytes32 public constant EMPLOYER_ROLE = keccak256("EMPLOYER_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    // Paymaster support
     address public paymaster;
-    bool public paymasterEnabled = false;
+    bool public paymasterEnabled;
 
-    // Track sponsored transactions
     mapping(address => bool) public sponsoredUsers;
     mapping(bytes32 => bool) public sponsoredTransactions;
 
-    // Temporary storage for sponsored user (set by paymaster before calling)
     mapping(address => address) public sponsoredUserForCaller;
-
-    constructor(uint256 _serviceFee) {
-        require(_serviceFee > 0, "Service fee must be greater than 0");
-        serviceFee = _serviceFee;
-
-        _grantRole(ADMIN_ROLE, msg.sender);
-        _grantRole(EMPLOYER_ROLE, msg.sender);
-    }
 
     mapping(uint256 => JobStruct) public jobs;
     mapping(uint256 => ApplicationStruct[]) jobApplications;
     mapping(address => uint256[]) public employerJobs;
+
+    mapping(uint256 => mapping(address => ApplicationState))
+        public applicationStates;
 
     event JobPosted(
         uint256 indexed jobId,
@@ -55,14 +54,17 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     );
 
     event ServiceFeeUpdated(uint256 oldFee, uint256 newFee);
-
     event JobExpired(uint256 indexed jobId, address indexed employer);
-
     event PaymasterSet(address indexed paymaster, bool enabled);
     event TransactionSponsored(
         address indexed user,
         string operation,
         address indexed sponsor
+    );
+    event ApplicationStateChanged(
+        uint256 indexed jobId,
+        address indexed applicant,
+        ApplicationState newState
     );
 
     enum WorkMode {
@@ -133,14 +135,23 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         ApplicationState currentState;
     }
 
-    mapping(uint256 => mapping(address => ApplicationState))
-        public applicationStates;
+    constructor() {
+        _disableInitializers();
+    }
 
-    event ApplicationStateChanged(
-        uint256 indexed jobId,
-        address indexed applicant,
-        ApplicationState newState
-    );
+    function initialize(uint256 _serviceFee) public initializer {
+        require(_serviceFee > 0, "Invalid fee");
+
+        __Ownable_init();
+        __ReentrancyGuard_init();
+        __AccessControl_init();
+
+        serviceFee = _serviceFee;
+        paymasterEnabled = false;
+
+        _grantRole(ADMIN_ROLE, msg.sender);
+        _grantRole(EMPLOYER_ROLE, msg.sender);
+    }
 
     function updateServiceFee(uint256 _newFee) public onlyOwner {
         uint256 oldFee = serviceFee;
@@ -148,22 +159,13 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         emit ServiceFeeUpdated(oldFee, _newFee);
     }
 
-    /**
-     * @notice Set the paymaster address and enable/disable it
-     */
     function setPaymaster(address _paymaster, bool _enabled) public onlyOwner {
-        require(
-            _paymaster != address(0) || !_enabled,
-            "Invalid paymaster address"
-        );
+        require(_paymaster != address(0) || !_enabled, "Invalid paymaster");
         paymaster = _paymaster;
         paymasterEnabled = _enabled;
         emit PaymasterSet(_paymaster, _enabled);
     }
 
-    /**
-     * @notice Check if a transaction is sponsored by paymaster
-     */
     function isSponsoredTransaction() internal view returns (bool) {
         return
             paymasterEnabled &&
@@ -171,10 +173,6 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
             msg.sender == paymaster;
     }
 
-    /**
-     * @notice Set sponsored user for current transaction (only callable by paymaster)
-     * @dev Paymaster calls this before executing the actual function
-     */
     function setSponsoredUser(address user) external {
         require(
             isSponsoredTransaction(),
@@ -183,9 +181,6 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         sponsoredUserForCaller[msg.sender] = user;
     }
 
-    /**
-     * @notice Get the actual user for sponsored transactions
-     */
     function getSponsoredUser() internal view returns (address) {
         if (isSponsoredTransaction()) {
             address user = sponsoredUserForCaller[msg.sender];
@@ -199,6 +194,14 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         if (!hasRole(EMPLOYER_ROLE, employer)) {
             _grantRole(EMPLOYER_ROLE, employer);
         }
+    }
+
+    function grantEmployerRole(address employer) public {
+        require(
+            hasRole(ADMIN_ROLE, msg.sender),
+            "Only admin can grant employer role"
+        );
+        _grantEmployerRole(employer);
     }
 
     function postJob(
@@ -219,32 +222,25 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
             msg.sender == tx.origin ||
                 hasRole(ADMIN_ROLE, msg.sender) ||
                 isSponsoredTransaction(),
-            "Unauthorized to post job"
+            "Unauthorized"
         );
 
-        // Check payment: either user pays service fee OR transaction is sponsored
         bool isSponsored = isSponsoredTransaction();
         if (!isSponsored) {
             require(msg.value >= serviceFee, "Insufficient fund");
-        } else {
-            // For sponsored transactions, service fee is waived
-            // Paymaster covers gas, platform can choose to waive service fee
         }
 
-        require(expirationDays > 0, "Expiration days must be greater than 0");
-        require(bytes(orgName).length > 0, "Organisation name cannot be empty");
-        require(bytes(title).length > 0, "Title cannot be empty");
-        require(bytes(description).length > 0, "Description cannot be empty");
-        require(bytes(logoCID).length > 0, "Logo cannot be empty");
+        require(expirationDays > 0, "Invalid expiration");
+        require(bytes(orgName).length > 0, "Empty orgName");
+        require(bytes(title).length > 0, "Empty title");
+        require(bytes(description).length > 0, "Empty description");
+        require(bytes(logoCID).length > 0, "Empty logo");
 
-        // Determine the employer
         address jobEmployer;
         if (isSponsored) {
-            // For sponsored transactions, get the actual user from paymaster
             jobEmployer = getSponsoredUser();
             sponsoredUsers[jobEmployer] = true;
             emit TransactionSponsored(jobEmployer, "postJob", msg.sender);
-            // Clear the mapping after use
             delete sponsoredUserForCaller[msg.sender];
         } else {
             jobEmployer = hasRole(ADMIN_ROLE, msg.sender)
@@ -285,7 +281,6 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         });
 
         employerJobs[jobEmployer].push(currentJobId);
-
         _grantEmployerRole(jobEmployer);
 
         emit JobPosted(currentJobId, jobEmployer, title, orgName);
@@ -309,17 +304,17 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     ) public nonReentrant {
         require(
             msg.sender == jobs[id].employer || hasRole(ADMIN_ROLE, msg.sender),
-            "Unauthorized to edit job"
+            "Unauthorized"
         );
 
-        require(!jobs[id].deleted, "Job has been deleted");
-        require(bytes(orgName).length > 0, "Organisation name cannot be empty");
-        require(bytes(title).length > 0, "Title cannot be empty");
-        require(bytes(description).length > 0, "Description cannot be empty");
-        require(bytes(logoCID).length > 0, "Logo cannot be empty");
+        require(!jobs[id].deleted, "Deleted");
+        require(bytes(orgName).length > 0, "Empty orgName");
+        require(bytes(title).length > 0, "Empty title");
+        require(bytes(description).length > 0, "Empty description");
+        require(bytes(logoCID).length > 0, "Empty logo");
 
         uint256 calculatedEndTime = block.timestamp + 45 days;
-        require(calculatedEndTime > block.timestamp, "Invalid job duration");
+        require(calculatedEndTime > block.timestamp, "Invalid duration");
 
         CustomField[] memory customField = new CustomField[](fieldName.length);
         for (uint i = 0; i < fieldName.length; i++) {
@@ -346,24 +341,20 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     function deleteJob(uint256 id) public {
         require(
             msg.sender == jobs[id].employer || hasRole(ADMIN_ROLE, msg.sender),
-            "Unauthorized to delete job"
+            "Unauthorized"
         );
-
-        require(!jobs[id].deleted, "Job has already been deleted");
-
+        require(!jobs[id].deleted, "Already deleted");
         jobs[id].deleted = true;
     }
 
     function isJobExpired(uint256 jobId) public view returns (bool) {
         require(jobId > 0 && jobId <= totalJobs.current(), "Invalid job ID");
-
         return
             jobs[jobId].deleted || block.timestamp > jobs[jobId].expirationTime;
     }
 
     function checkJobExpiration(uint256 jobId) public {
         require(jobId > 0 && jobId <= totalJobs.current(), "Invalid job ID");
-
         if (
             block.timestamp > jobs[jobId].expirationTime &&
             !jobs[jobId].deleted &&
@@ -378,12 +369,10 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         require(
             hasRole(ADMIN_ROLE, msg.sender) ||
                 hasRole(EMPLOYER_ROLE, msg.sender),
-            "Not authorized to expire job"
+            "Unauthorized"
         );
-        require(!jobs[jobId].deleted, "Job already deleted");
-
+        require(!jobs[jobId].deleted, "Deleted");
         jobs[jobId].expirationTime = block.timestamp;
-
         emit JobExpired(jobId, jobs[jobId].employer);
     }
 
@@ -400,28 +389,27 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         string memory expectedSalary,
         string memory github
     ) public payable nonReentrant {
-        require(!isJobExpired(jobId), "Job has expired or been deleted");
-        require(jobs[jobId].isOpen, "Job is no longer accepting applications");
+        require(!isJobExpired(jobId), "Expired");
+        require(jobs[jobId].isOpen, "Closed");
 
-        require(bytes(name).length > 0, "Name cannot be empty");
-        require(bytes(email).length > 0, "Email cannot be empty");
-        require(bytes(cvCID).length > 0, "CV is required");
+        require(bytes(name).length > 0, "Empty name");
+        require(bytes(email).length > 0, "Empty email");
+        require(bytes(cvCID).length > 0, "Empty CV");
 
         JobStruct memory job = jobs[jobId];
         require(
             fieldResponses.length == job.customField.length,
-            "Incomplete custom field responses"
+            "Incomplete fields"
         );
         for (uint i = 0; i < job.customField.length; i++) {
             if (job.customField[i].isRequired) {
                 require(
                     bytes(fieldResponses[i]).length > 0,
-                    "Required field cannot be empty"
+                    "Required field empty"
                 );
             }
         }
 
-        // Determine the actual applicant (user or sponsored user)
         address applicant;
         bool isSponsored = isSponsoredTransaction();
         if (isSponsored) {
@@ -432,7 +420,6 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
                 "submitApplication",
                 msg.sender
             );
-            // Clear the mapping after use
             delete sponsoredUserForCaller[msg.sender];
         } else {
             applicant = msg.sender;
@@ -440,7 +427,7 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
 
         require(
             applicationStates[jobId][applicant] == ApplicationState.PENDING,
-            "You have already applied to this job"
+            "Already applied"
         );
 
         totalApplications.increment();
@@ -467,7 +454,6 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         });
 
         jobApplications[jobId].push(newApplication);
-
         applicationStates[jobId][applicant] = ApplicationState.PENDING;
 
         emit ApplicationSubmitted(jobId, applicant, name, job.workMode, email);
@@ -479,11 +465,10 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         ApplicationState newState
     ) public {
         require(jobs[jobId].id > 0 && !jobs[jobId].deleted, "Invalid job");
-
         require(
             hasRole(ADMIN_ROLE, msg.sender) ||
                 hasRole(EMPLOYER_ROLE, msg.sender),
-            "Not authorized to update application status"
+            "Unauthorized"
         );
 
         bool applicantFound = false;
@@ -496,27 +481,25 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
                 break;
             }
         }
-        require(applicantFound, "Applicant not found for this job");
+        require(applicantFound, "Applicant not found");
     }
 
     function closeJob(uint256 jobId) public {
         require(
             hasRole(ADMIN_ROLE, msg.sender) ||
                 hasRole(EMPLOYER_ROLE, msg.sender),
-            "Not authorized to close job"
+            "Unauthorized"
         );
-
         jobs[jobId].isOpen = false;
     }
 
     function getJob(uint256 jobId) public view returns (JobStruct memory) {
-        require(!isJobExpired(jobId), "Job has expired or been deleted");
+        require(!isJobExpired(jobId), "Expired");
         return jobs[jobId];
     }
 
     function getAllJobs() public view returns (JobStruct[] memory) {
         uint256 allAvailableJobs = 0;
-
         for (uint i = 1; i <= totalJobs.current(); i++) {
             if (!isJobExpired(i)) {
                 allAvailableJobs++;
@@ -525,14 +508,12 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
 
         JobStruct[] memory availableJobs = new JobStruct[](allAvailableJobs);
         uint256 index = 0;
-
         for (uint i = 1; i <= totalJobs.current(); i++) {
             if (!isJobExpired(i)) {
                 availableJobs[index] = jobs[i];
                 index++;
             }
         }
-
         return availableJobs;
     }
 
@@ -564,7 +545,7 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         require(
             hasRole(ADMIN_ROLE, msg.sender) ||
                 hasRole(EMPLOYER_ROLE, msg.sender),
-            "Not authorized to view applicant"
+            "Unauthorized"
         );
         require(
             jobs[jobId].id != 0 && !jobs[jobId].deleted,
@@ -572,7 +553,7 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         );
         require(
             applicantIndex < jobApplications[jobId].length,
-            "Invalid applicant index"
+            "Invalid index"
         );
         return jobApplications[jobId][applicantIndex];
     }
@@ -583,7 +564,7 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         require(
             hasRole(ADMIN_ROLE, msg.sender) ||
                 hasRole(EMPLOYER_ROLE, msg.sender),
-            "Not authorized to view applications"
+            "Unauthorized"
         );
         return jobApplications[jobId].length;
     }
@@ -594,7 +575,7 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         require(
             hasRole(ADMIN_ROLE, msg.sender) ||
                 hasRole(EMPLOYER_ROLE, msg.sender),
-            "Not authorized to view applications"
+            "Unauthorized"
         );
         return jobApplications[jobId];
     }

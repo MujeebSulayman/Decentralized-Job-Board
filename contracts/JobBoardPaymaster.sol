@@ -4,19 +4,13 @@ pragma solidity >=0.8.28 <0.9.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import "./JobBoard.sol";
+import "./JobBoardUpgradeable.sol";
 
-/**
- * @title JobBoardPaymaster
- * @notice Paymaster contract for sponsoring gas fees on JobBoard
- * @dev Supports meta-transactions and direct gas sponsorship
- */
 contract JobBoardPaymaster is Ownable, EIP712 {
     using ECDSA for bytes32;
 
-    JobBoard public immutable jobBoard;
+    JobBoardUpgradeable public immutable jobBoard;
 
-    // Domain separator for EIP-712
     bytes32 public constant POST_JOB_TYPEHASH =
         keccak256(
             "PostJob(address user,string orgName,string title,string description,string orgEmail,string logoCID,uint256 expirationDays,uint256 nonce)"
@@ -27,22 +21,16 @@ contract JobBoardPaymaster is Ownable, EIP712 {
             "SubmitApplication(address user,uint256 jobId,string name,string email,string phoneNumber,string location,string cvCID,uint256 nonce)"
         );
 
-    // Track nonces to prevent replay attacks
     mapping(address => uint256) public nonces;
 
-    // Track sponsored transactions
     mapping(bytes32 => bool) public sponsoredTransactions;
 
-    // Whitelist of addresses that can sponsor transactions
     mapping(address => bool) public whitelistedSponsors;
 
-    // Track gas costs per sponsor
     mapping(address => uint256) public sponsorGasSpent;
 
-    // Maximum gas that can be sponsored per transaction
     uint256 public maxGasPerTransaction = 500000;
 
-    // Enable/disable paymaster
     bool public paymasterEnabled = true;
 
     event TransactionSponsored(
@@ -64,14 +52,10 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         string memory version
     ) EIP712(name, version) {
         require(_jobBoard != address(0), "Invalid job board address");
-        jobBoard = JobBoard(_jobBoard);
+        jobBoard = JobBoardUpgradeable(_jobBoard);
         whitelistedSponsors[msg.sender] = true;
     }
 
-    /**
-     * @notice Execute postJob via meta-transaction (gasless for user)
-     * @dev User signs the transaction, relayer executes it
-     */
     function postJobMeta(
         address user,
         string memory orgName,
@@ -81,8 +65,8 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         string memory logoCID,
         string[] memory fieldName,
         bool[] memory isRequired,
-        JobBoard.JobType jobType,
-        JobBoard.WorkMode workMode,
+        JobBoardUpgradeable.JobType jobType,
+        JobBoardUpgradeable.WorkMode workMode,
         string memory minimumSalary,
         string memory maximumSalary,
         uint256 expirationDays,
@@ -94,7 +78,6 @@ contract JobBoardPaymaster is Ownable, EIP712 {
             "Not authorized to sponsor"
         );
 
-        // Verify signature
         bytes32 hash = _hashPostJob(
             user,
             orgName,
@@ -109,14 +92,11 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         require(signer == user, "Invalid signature");
         require(!sponsoredTransactions[hash], "Transaction already executed");
 
-        // Mark as executed
         sponsoredTransactions[hash] = true;
         nonces[user]++;
 
-        // Set the sponsored user in JobBoard contract
         jobBoard.setSponsoredUser(user);
 
-        // Execute transaction on behalf of user
         uint256 gasStart = gasleft();
         uint256 jobId = jobBoard.postJob{value: 0}(
             orgName,
@@ -134,17 +114,12 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         );
         uint256 gasUsed = gasStart - gasleft();
 
-        // Track gas spent
         sponsorGasSpent[msg.sender] += gasUsed;
 
         emit TransactionSponsored(user, "postJob", gasUsed, msg.sender);
         return jobId;
     }
 
-    /**
-     * @notice Execute submitApplication via meta-transaction (gasless for user)
-     * @dev User signs the transaction, relayer executes it
-     */
     function submitApplicationMeta(
         address user,
         uint256 jobId,
@@ -166,7 +141,6 @@ contract JobBoardPaymaster is Ownable, EIP712 {
             "Not authorized to sponsor"
         );
 
-        // Verify signature
         bytes32 hash = _hashSubmitApplication(
             user,
             jobId,
@@ -181,14 +155,11 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         require(signer == user, "Invalid signature");
         require(!sponsoredTransactions[hash], "Transaction already executed");
 
-        // Mark as executed
         sponsoredTransactions[hash] = true;
         nonces[user]++;
 
-        // Set the sponsored user in JobBoard contract
         jobBoard.setSponsoredUser(user);
 
-        // Execute transaction on behalf of user
         uint256 gasStart = gasleft();
         jobBoard.submitApplication(
             jobId,
@@ -205,7 +176,6 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         );
         uint256 gasUsed = gasStart - gasleft();
 
-        // Track gas spent
         sponsorGasSpent[msg.sender] += gasUsed;
 
         emit TransactionSponsored(
@@ -216,10 +186,6 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         );
     }
 
-    /**
-     * @notice Directly sponsor a transaction (pay gas for user)
-     * @dev User still needs to send the transaction, but paymaster covers gas
-     */
     function sponsorTransaction(address user) external payable {
         require(paymasterEnabled, "Paymaster is disabled");
         require(
@@ -228,14 +194,10 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         );
         require(msg.value > 0, "Must send ETH to sponsor");
 
-        // Transfer ETH to user to cover gas
         (bool success, ) = payable(user).call{value: msg.value}("");
         require(success, "Transfer failed");
     }
 
-    /**
-     * @notice Hash the postJob parameters for EIP-712 signing
-     */
     function _hashPostJob(
         address user,
         string memory orgName,
@@ -264,9 +226,6 @@ contract JobBoardPaymaster is Ownable, EIP712 {
             );
     }
 
-    /**
-     * @notice Hash the submitApplication parameters for EIP-712 signing
-     */
     function _hashSubmitApplication(
         address user,
         uint256 jobId,
@@ -295,16 +254,10 @@ contract JobBoardPaymaster is Ownable, EIP712 {
             );
     }
 
-    /**
-     * @notice Get the current nonce for a user
-     */
     function getNonce(address user) external view returns (uint256) {
         return nonces[user];
     }
 
-    /**
-     * @notice Whitelist/unwhitelist a sponsor address
-     */
     function setSponsorWhitelist(
         address sponsor,
         bool whitelisted
@@ -313,34 +266,22 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         emit SponsorWhitelisted(sponsor, whitelisted);
     }
 
-    /**
-     * @notice Enable/disable the paymaster
-     */
     function setPaymasterEnabled(bool enabled) external onlyOwner {
         paymasterEnabled = enabled;
         emit PaymasterToggled(enabled);
     }
 
-    /**
-     * @notice Set maximum gas per transaction
-     */
     function setMaxGasPerTransaction(uint256 maxGas) external onlyOwner {
         uint256 oldMax = maxGasPerTransaction;
         maxGasPerTransaction = maxGas;
         emit MaxGasUpdated(oldMax, maxGas);
     }
 
-    /**
-     * @notice Deposit funds to the paymaster
-     */
     function deposit() external payable {
         require(msg.value > 0, "Must send ETH");
         emit FundsDeposited(msg.sender, msg.value);
     }
 
-    /**
-     * @notice Withdraw funds from the paymaster
-     */
     function withdraw(uint256 amount) external onlyOwner {
         require(address(this).balance >= amount, "Insufficient balance");
         (bool success, ) = payable(owner()).call{value: amount}("");
@@ -348,23 +289,16 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         emit FundsWithdrawn(owner(), amount);
     }
 
-    /**
-     * @notice Get paymaster balance
-     */
     function getBalance() external view returns (uint256) {
         return address(this).balance;
     }
 
-    /**
-     * @notice Get gas spent by a sponsor
-     */
     function getSponsorGasSpent(
         address sponsor
     ) external view returns (uint256) {
         return sponsorGasSpent[sponsor];
     }
 
-    // Receive ETH
     receive() external payable {
         emit FundsDeposited(msg.sender, msg.value);
     }
