@@ -25,7 +25,7 @@ async function main() {
   const contractAddressFile = path.join(contractsDir, 'contractAddress.json');
 
   if (!fs.existsSync(contractAddressFile)) {
-    console.error('❌ contractAddress.json not found. Please deploy first.');
+    console.error('ERROR: contractAddress.json not found. Please deploy first.');
     process.exit(1);
   }
 
@@ -33,7 +33,7 @@ async function main() {
   const proxyAddress = addresses.JobBoardProxy || addresses.JobBoard;
 
   if (!proxyAddress) {
-    console.error('❌ Proxy address not found in contractAddress.json');
+    console.error('ERROR: Proxy address not found in contractAddress.json');
     process.exit(1);
   }
 
@@ -51,13 +51,13 @@ async function main() {
     // - Preserve all existing data
     const upgraded = await upgrades.upgradeProxy(proxyAddress, JobBoardUpgradeableV2);
     
-    console.log('✓ Upgrade successful!\n');
+    console.log('Upgrade successful!\n');
     
     // Get new implementation address
     const newImplementation = await upgrades.erc1967.getImplementationAddress(proxyAddress);
     console.log('New implementation address:', newImplementation);
     console.log('Proxy address (unchanged):', proxyAddress);
-    console.log('\n✅ All data preserved - users can continue using same address!');
+    console.log('\nAll data preserved - users can continue using same address!');
     
     // Update contract addresses file
     addresses.JobBoardImplementation = newImplementation;
@@ -68,14 +68,14 @@ async function main() {
     
     console.log('\nContract addresses updated in contractAddress.json');
   } catch (error) {
-    console.error('❌ Upgrade failed:', error.message);
+    console.error('ERROR: Upgrade failed:', error.message);
     
     // Common errors:
     if (error.message.includes('storage')) {
-      console.log('\n💡 Tip: Check that storage layout matches previous version!');
+      console.log('\nTip: Check that storage layout matches previous version!');
     }
     if (error.message.includes('initializer')) {
-      console.log('\n💡 Tip: Make sure new version has same initializer or none!');
+      console.log('\nTip: Make sure new version has same initializer or none!');
     }
     
     throw error;
