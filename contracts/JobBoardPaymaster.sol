@@ -4,7 +4,7 @@ pragma solidity >=0.8.28 <0.9.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import "./JobBoard.sol";
+import "./JobBoardUpgradeable.sol";
 
 /**
  * @title JobBoardPaymaster
@@ -14,7 +14,7 @@ import "./JobBoard.sol";
 contract JobBoardPaymaster is Ownable, EIP712 {
     using ECDSA for bytes32;
 
-    JobBoard public immutable jobBoard;
+    JobBoardUpgradeable public immutable jobBoard;
 
     // Domain separator for EIP-712
     bytes32 public constant POST_JOB_TYPEHASH =
@@ -64,7 +64,7 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         string memory version
     ) EIP712(name, version) {
         require(_jobBoard != address(0), "Invalid job board address");
-        jobBoard = JobBoard(_jobBoard);
+        jobBoard = JobBoardUpgradeable(_jobBoard);
         whitelistedSponsors[msg.sender] = true;
     }
 
@@ -81,8 +81,8 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         string memory logoCID,
         string[] memory fieldName,
         bool[] memory isRequired,
-        JobBoard.JobType jobType,
-        JobBoard.WorkMode workMode,
+        JobBoardUpgradeable.JobType jobType,
+        JobBoardUpgradeable.WorkMode workMode,
         string memory minimumSalary,
         string memory maximumSalary,
         uint256 expirationDays,

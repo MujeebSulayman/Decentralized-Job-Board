@@ -65,7 +65,8 @@ const grantEmployerRole = async (roleAddress: string): Promise<void> => {
   }
   try {
     const contract = await getEthereumContract();
-    tx = await contract._grantEmployerRole(roleAddress);
+    tx = await contract.grantEmployerRole(roleAddress);
+    await tx.wait();
   } catch (error) {
     reportError(error);
     return Promise.reject(error);
