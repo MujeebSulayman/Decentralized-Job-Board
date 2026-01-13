@@ -16,6 +16,17 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     bytes32 public constant EMPLOYER_ROLE = keccak256("EMPLOYER_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
+    // Paymaster support
+    address public paymaster;
+    bool public paymasterEnabled = false;
+
+    // Track sponsored transactions
+    mapping(address => bool) public sponsoredUsers;
+    mapping(bytes32 => bool) public sponsoredTransactions;
+
+    // Temporary storage for sponsored user (set by paymaster before calling)
+    mapping(address => address) public sponsoredUserForCaller;
+
     constructor(uint256 _serviceFee) {
         require(_serviceFee > 0, "Service fee must be greater than 0");
         serviceFee = _serviceFee;
@@ -46,6 +57,13 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     event ServiceFeeUpdated(uint256 oldFee, uint256 newFee);
 
     event JobExpired(uint256 indexed jobId, address indexed employer);
+
+    event PaymasterSet(address indexed paymaster, bool enabled);
+    event TransactionSponsored(
+        address indexed user,
+        string operation,
+        address indexed sponsor
+    );
 
     enum WorkMode {
         Remote,
@@ -130,6 +148,53 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         emit ServiceFeeUpdated(oldFee, _newFee);
     }
 
+    /**
+     * @notice Set the paymaster address and enable/disable it
+     */
+    function setPaymaster(address _paymaster, bool _enabled) public onlyOwner {
+        require(
+            _paymaster != address(0) || !_enabled,
+            "Invalid paymaster address"
+        );
+        paymaster = _paymaster;
+        paymasterEnabled = _enabled;
+        emit PaymasterSet(_paymaster, _enabled);
+    }
+
+    /**
+     * @notice Check if a transaction is sponsored by paymaster
+     */
+    function isSponsoredTransaction() internal view returns (bool) {
+        return
+            paymasterEnabled &&
+            paymaster != address(0) &&
+            msg.sender == paymaster;
+    }
+
+    /**
+     * @notice Set sponsored user for current transaction (only callable by paymaster)
+     * @dev Paymaster calls this before executing the actual function
+     */
+    function setSponsoredUser(address user) external {
+        require(
+            isSponsoredTransaction(),
+            "Only paymaster can set sponsored user"
+        );
+        sponsoredUserForCaller[msg.sender] = user;
+    }
+
+    /**
+     * @notice Get the actual user for sponsored transactions
+     */
+    function getSponsoredUser() internal view returns (address) {
+        if (isSponsoredTransaction()) {
+            address user = sponsoredUserForCaller[msg.sender];
+            require(user != address(0), "Sponsored user not set");
+            return user;
+        }
+        return msg.sender;
+    }
+
     function _grantEmployerRole(address employer) internal {
         if (!hasRole(EMPLOYER_ROLE, employer)) {
             _grantRole(EMPLOYER_ROLE, employer);
@@ -151,11 +216,21 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         uint256 expirationDays
     ) public payable nonReentrant returns (uint256) {
         require(
-            msg.sender == tx.origin || hasRole(ADMIN_ROLE, msg.sender),
+            msg.sender == tx.origin ||
+                hasRole(ADMIN_ROLE, msg.sender) ||
+                isSponsoredTransaction(),
             "Unauthorized to post job"
         );
 
-        require(msg.value >= serviceFee, "Insufficient fund");
+        // Check payment: either user pays service fee OR transaction is sponsored
+        bool isSponsored = isSponsoredTransaction();
+        if (!isSponsored) {
+            require(msg.value >= serviceFee, "Insufficient fund");
+        } else {
+            // For sponsored transactions, service fee is waived
+            // Paymaster covers gas, platform can choose to waive service fee
+        }
+
         require(expirationDays > 0, "Expiration days must be greater than 0");
         require(bytes(orgName).length > 0, "Organisation name cannot be empty");
         require(bytes(title).length > 0, "Title cannot be empty");
@@ -163,9 +238,19 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
         require(bytes(logoCID).length > 0, "Logo cannot be empty");
 
         // Determine the employer
-        address jobEmployer = hasRole(ADMIN_ROLE, msg.sender)
-            ? tx.origin
-            : msg.sender;
+        address jobEmployer;
+        if (isSponsored) {
+            // For sponsored transactions, get the actual user from paymaster
+            jobEmployer = getSponsoredUser();
+            sponsoredUsers[jobEmployer] = true;
+            emit TransactionSponsored(jobEmployer, "postJob", msg.sender);
+            // Clear the mapping after use
+            delete sponsoredUserForCaller[msg.sender];
+        } else {
+            jobEmployer = hasRole(ADMIN_ROLE, msg.sender)
+                ? tx.origin
+                : msg.sender;
+        }
 
         CustomField[] memory customField = new CustomField[](fieldName.length);
         for (uint i = 0; i < fieldName.length; i++) {
@@ -336,8 +421,25 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
             }
         }
 
+        // Determine the actual applicant (user or sponsored user)
+        address applicant;
+        bool isSponsored = isSponsoredTransaction();
+        if (isSponsored) {
+            applicant = getSponsoredUser();
+            sponsoredUsers[applicant] = true;
+            emit TransactionSponsored(
+                applicant,
+                "submitApplication",
+                msg.sender
+            );
+            // Clear the mapping after use
+            delete sponsoredUserForCaller[msg.sender];
+        } else {
+            applicant = msg.sender;
+        }
+
         require(
-            applicationStates[jobId][msg.sender] == ApplicationState.PENDING,
+            applicationStates[jobId][applicant] == ApplicationState.PENDING,
             "You have already applied to this job"
         );
 
@@ -345,7 +447,7 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
 
         ApplicationStruct memory newApplication = ApplicationStruct({
             jobId: jobId,
-            applicant: msg.sender,
+            applicant: applicant,
             name: name,
             email: email,
             phoneNumber: phoneNumber,
@@ -366,9 +468,9 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
 
         jobApplications[jobId].push(newApplication);
 
-        applicationStates[jobId][msg.sender] = ApplicationState.PENDING;
+        applicationStates[jobId][applicant] = ApplicationState.PENDING;
 
-        emit ApplicationSubmitted(jobId, msg.sender, name, job.workMode, email);
+        emit ApplicationSubmitted(jobId, applicant, name, job.workMode, email);
     }
 
     function updateApplicationStatus(
