@@ -1,21 +1,12 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity >=0.8.28 <0.9.0;
 
-// Step 1: Import upgradeable versions instead of regular ones
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-/**
- * @title JobBoardUpgradeable
- * @notice Upgradeable version of JobBoard using OpenZeppelin's proxy pattern
- * @dev Key differences from regular contract:
- * 1. Uses upgradeable imports (OwnableUpgradeable, etc.)
- * 2. Uses initializer() instead of constructor()
- * 3. Must preserve storage layout for upgrades
- */
 contract JobBoardUpgradeable is
     Initializable,
     OwnableUpgradeable,
@@ -24,7 +15,6 @@ contract JobBoardUpgradeable is
 {
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
-    // Step 2: Storage variables (MUST keep same order in future upgrades!)
     CountersUpgradeable.Counter private totalJobs;
     CountersUpgradeable.Counter private totalApplications;
 
@@ -33,15 +23,12 @@ contract JobBoardUpgradeable is
     bytes32 public constant EMPLOYER_ROLE = keccak256("EMPLOYER_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    // Paymaster support
     address public paymaster;
     bool public paymasterEnabled;
 
-    // Track sponsored transactions
     mapping(address => bool) public sponsoredUsers;
     mapping(bytes32 => bool) public sponsoredTransactions;
 
-    // Temporary storage for sponsored user (set by paymaster before calling)
     mapping(address => address) public sponsoredUserForCaller;
 
     mapping(uint256 => JobStruct) public jobs;
@@ -51,7 +38,6 @@ contract JobBoardUpgradeable is
     mapping(uint256 => mapping(address => ApplicationState))
         public applicationStates;
 
-    // Step 3: Events (same as before)
     event JobPosted(
         uint256 indexed jobId,
         address indexed employer,
@@ -81,7 +67,6 @@ contract JobBoardUpgradeable is
         ApplicationState newState
     );
 
-    // Step 4: Enums and Structs (same as before)
     enum WorkMode {
         Remote,
         Onsite,
@@ -150,37 +135,23 @@ contract JobBoardUpgradeable is
         ApplicationState currentState;
     }
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    // Step 5: Constructor is disabled in upgradeable contracts
-    // We use this to prevent implementation contract from being initialized
     constructor() {
         _disableInitializers();
     }
 
-    /**
-     * @notice Initialize function replaces constructor
-     * @dev Can only be called once (enforced by initializer modifier)
-     * @param _serviceFee Initial service fee
-     */
     function initialize(uint256 _serviceFee) public initializer {
         require(_serviceFee > 0, "Invalid fee");
 
-        // Initialize parent contracts
         __Ownable_init();
         __ReentrancyGuard_init();
         __AccessControl_init();
 
-        // Set initial values
         serviceFee = _serviceFee;
         paymasterEnabled = false;
 
-        // Grant roles to deployer
         _grantRole(ADMIN_ROLE, msg.sender);
         _grantRole(EMPLOYER_ROLE, msg.sender);
     }
-
-    // Step 6: All other functions remain the same!
-    // (I'll copy the rest from your original contract)
 
     function updateServiceFee(uint256 _newFee) public onlyOwner {
         uint256 oldFee = serviceFee;
