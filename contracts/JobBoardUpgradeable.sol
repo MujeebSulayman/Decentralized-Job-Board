@@ -135,12 +135,36 @@ contract JobBoardUpgradeable is
         ApplicationState currentState;
     }
 
+    error InvalidFee();
+    error InvalidPaymaster();
+    error NotAuthorized();
+    error SponsoredUserNotSet();
+    error InsufficientFund();
+    error InvalidExpiration();
+    error EmptyString();
+    error Unauthorized();
+    error Deleted();
+    error AlreadyDeleted();
+    error InvalidJobID();
+    error InvalidDuration();
+    error Expired();
+    error Closed();
+    error IncompleteFields();
+    error RequiredFieldEmpty();
+    error AlreadyApplied();
+    error InvalidJob();
+    error ApplicantNotFound();
+    error InsufficientFunds();
+    error JobDoesNotExist();
+    error InvalidIndex();
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
     function initialize(uint256 _serviceFee) public initializer {
-        require(_serviceFee > 0, "Invalid fee");
+        if (_serviceFee == 0) revert InvalidFee();
 
         __Ownable_init();
         __ReentrancyGuard_init();
@@ -160,7 +184,7 @@ contract JobBoardUpgradeable is
     }
 
     function setPaymaster(address _paymaster, bool _enabled) public onlyOwner {
-        require(_paymaster != address(0) || !_enabled, "Invalid paymaster");
+        if (_paymaster == address(0) && _enabled) revert InvalidPaymaster();
         paymaster = _paymaster;
         paymasterEnabled = _enabled;
         emit PaymasterSet(_paymaster, _enabled);
@@ -174,17 +198,14 @@ contract JobBoardUpgradeable is
     }
 
     function setSponsoredUser(address user) external {
-        require(
-            isSponsoredTransaction(),
-            "Only paymaster can set sponsored user"
-        );
+        if (!isSponsoredTransaction()) revert NotAuthorized();
         sponsoredUserForCaller[msg.sender] = user;
     }
 
     function getSponsoredUser() internal view returns (address) {
         if (isSponsoredTransaction()) {
             address user = sponsoredUserForCaller[msg.sender];
-            require(user != address(0), "Sponsored user not set");
+            if (user == address(0)) revert SponsoredUserNotSet();
             return user;
         }
         return msg.sender;
@@ -197,10 +218,7 @@ contract JobBoardUpgradeable is
     }
 
     function grantEmployerRole(address employer) public {
-        require(
-            hasRole(ADMIN_ROLE, msg.sender),
-            "Only admin can grant employer role"
-        );
+        if (!hasRole(ADMIN_ROLE, msg.sender)) revert NotAuthorized();
         _grantEmployerRole(employer);
     }
 
@@ -218,23 +236,22 @@ contract JobBoardUpgradeable is
         string memory maximumSalary,
         uint256 expirationDays
     ) public payable nonReentrant returns (uint256) {
-        require(
-            msg.sender == tx.origin ||
-                hasRole(ADMIN_ROLE, msg.sender) ||
-                isSponsoredTransaction(),
-            "Unauthorized"
-        );
+        if (
+            msg.sender != tx.origin &&
+            !hasRole(ADMIN_ROLE, msg.sender) &&
+            !isSponsoredTransaction()
+        ) revert Unauthorized();
 
         bool isSponsored = isSponsoredTransaction();
         if (!isSponsored) {
-            require(msg.value >= serviceFee, "Insufficient fund");
+            if (msg.value < serviceFee) revert InsufficientFund();
         }
 
-        require(expirationDays > 0, "Invalid expiration");
-        require(bytes(orgName).length > 0, "Empty orgName");
-        require(bytes(title).length > 0, "Empty title");
-        require(bytes(description).length > 0, "Empty description");
-        require(bytes(logoCID).length > 0, "Empty logo");
+        if (expirationDays == 0) revert InvalidExpiration();
+        if (bytes(orgName).length == 0) revert EmptyString();
+        if (bytes(title).length == 0) revert EmptyString();
+        if (bytes(description).length == 0) revert EmptyString();
+        if (bytes(logoCID).length == 0) revert EmptyString();
 
         address jobEmployer;
         if (isSponsored) {
@@ -302,19 +319,17 @@ contract JobBoardUpgradeable is
         string memory minimumSalary,
         string memory maximumSalary
     ) public nonReentrant {
-        require(
-            msg.sender == jobs[id].employer || hasRole(ADMIN_ROLE, msg.sender),
-            "Unauthorized"
-        );
+        if (msg.sender != jobs[id].employer && !hasRole(ADMIN_ROLE, msg.sender))
+            revert Unauthorized();
 
-        require(!jobs[id].deleted, "Deleted");
-        require(bytes(orgName).length > 0, "Empty orgName");
-        require(bytes(title).length > 0, "Empty title");
-        require(bytes(description).length > 0, "Empty description");
-        require(bytes(logoCID).length > 0, "Empty logo");
+        if (jobs[id].deleted) revert Deleted();
+        if (bytes(orgName).length == 0) revert EmptyString();
+        if (bytes(title).length == 0) revert EmptyString();
+        if (bytes(description).length == 0) revert EmptyString();
+        if (bytes(logoCID).length == 0) revert EmptyString();
 
         uint256 calculatedEndTime = block.timestamp + 45 days;
-        require(calculatedEndTime > block.timestamp, "Invalid duration");
+        if (calculatedEndTime <= block.timestamp) revert InvalidDuration();
 
         CustomField[] memory customField = new CustomField[](fieldName.length);
         for (uint i = 0; i < fieldName.length; i++) {
@@ -339,22 +354,20 @@ contract JobBoardUpgradeable is
     }
 
     function deleteJob(uint256 id) public {
-        require(
-            msg.sender == jobs[id].employer || hasRole(ADMIN_ROLE, msg.sender),
-            "Unauthorized"
-        );
-        require(!jobs[id].deleted, "Already deleted");
+        if (msg.sender != jobs[id].employer && !hasRole(ADMIN_ROLE, msg.sender))
+            revert Unauthorized();
+        if (jobs[id].deleted) revert AlreadyDeleted();
         jobs[id].deleted = true;
     }
 
     function isJobExpired(uint256 jobId) public view returns (bool) {
-        require(jobId > 0 && jobId <= totalJobs.current(), "Invalid job ID");
+        if (jobId == 0 || jobId > totalJobs.current()) revert InvalidJobID();
         return
             jobs[jobId].deleted || block.timestamp > jobs[jobId].expirationTime;
     }
 
     function checkJobExpiration(uint256 jobId) public {
-        require(jobId > 0 && jobId <= totalJobs.current(), "Invalid job ID");
+        if (jobId == 0 || jobId > totalJobs.current()) revert InvalidJobID();
         if (
             block.timestamp > jobs[jobId].expirationTime &&
             !jobs[jobId].deleted &&
@@ -366,12 +379,11 @@ contract JobBoardUpgradeable is
     }
 
     function expireJob(uint256 jobId) public {
-        require(
-            hasRole(ADMIN_ROLE, msg.sender) ||
-                hasRole(EMPLOYER_ROLE, msg.sender),
-            "Unauthorized"
-        );
-        require(!jobs[jobId].deleted, "Deleted");
+        if (
+            !hasRole(ADMIN_ROLE, msg.sender) &&
+            !hasRole(EMPLOYER_ROLE, msg.sender)
+        ) revert Unauthorized();
+        if (jobs[jobId].deleted) revert Deleted();
         jobs[jobId].expirationTime = block.timestamp;
         emit JobExpired(jobId, jobs[jobId].employer);
     }
@@ -389,24 +401,20 @@ contract JobBoardUpgradeable is
         string memory expectedSalary,
         string memory github
     ) public payable nonReentrant {
-        require(!isJobExpired(jobId), "Expired");
-        require(jobs[jobId].isOpen, "Closed");
+        if (isJobExpired(jobId)) revert Expired();
+        if (!jobs[jobId].isOpen) revert Closed();
 
-        require(bytes(name).length > 0, "Empty name");
-        require(bytes(email).length > 0, "Empty email");
-        require(bytes(cvCID).length > 0, "Empty CV");
+        if (bytes(name).length == 0) revert EmptyString();
+        if (bytes(email).length == 0) revert EmptyString();
+        if (bytes(cvCID).length == 0) revert EmptyString();
 
         JobStruct memory job = jobs[jobId];
-        require(
-            fieldResponses.length == job.customField.length,
-            "Incomplete fields"
-        );
+        if (fieldResponses.length != job.customField.length)
+            revert IncompleteFields();
         for (uint i = 0; i < job.customField.length; i++) {
             if (job.customField[i].isRequired) {
-                require(
-                    bytes(fieldResponses[i]).length > 0,
-                    "Required field empty"
-                );
+                if (bytes(fieldResponses[i]).length == 0)
+                    revert RequiredFieldEmpty();
             }
         }
 
@@ -425,10 +433,8 @@ contract JobBoardUpgradeable is
             applicant = msg.sender;
         }
 
-        require(
-            applicationStates[jobId][applicant] == ApplicationState.PENDING,
-            "Already applied"
-        );
+        if (applicationStates[jobId][applicant] != ApplicationState.PENDING)
+            revert AlreadyApplied();
 
         totalApplications.increment();
 
@@ -464,12 +470,11 @@ contract JobBoardUpgradeable is
         address applicant,
         ApplicationState newState
     ) public {
-        require(jobs[jobId].id > 0 && !jobs[jobId].deleted, "Invalid job");
-        require(
-            hasRole(ADMIN_ROLE, msg.sender) ||
-                hasRole(EMPLOYER_ROLE, msg.sender),
-            "Unauthorized"
-        );
+        if (jobs[jobId].id == 0 || jobs[jobId].deleted) revert InvalidJob();
+        if (
+            !hasRole(ADMIN_ROLE, msg.sender) &&
+            !hasRole(EMPLOYER_ROLE, msg.sender)
+        ) revert Unauthorized();
 
         bool applicantFound = false;
         for (uint i = 0; i < jobApplications[jobId].length; i++) {
@@ -481,20 +486,19 @@ contract JobBoardUpgradeable is
                 break;
             }
         }
-        require(applicantFound, "Applicant not found");
+        if (!applicantFound) revert ApplicantNotFound();
     }
 
     function closeJob(uint256 jobId) public {
-        require(
-            hasRole(ADMIN_ROLE, msg.sender) ||
-                hasRole(EMPLOYER_ROLE, msg.sender),
-            "Unauthorized"
-        );
+        if (
+            !hasRole(ADMIN_ROLE, msg.sender) &&
+            !hasRole(EMPLOYER_ROLE, msg.sender)
+        ) revert Unauthorized();
         jobs[jobId].isOpen = false;
     }
 
     function getJob(uint256 jobId) public view returns (JobStruct memory) {
-        require(!isJobExpired(jobId), "Expired");
+        if (isJobExpired(jobId)) revert Expired();
         return jobs[jobId];
     }
 
@@ -542,47 +546,40 @@ contract JobBoardUpgradeable is
         uint256 jobId,
         uint256 applicantIndex
     ) public view returns (ApplicationStruct memory) {
-        require(
-            hasRole(ADMIN_ROLE, msg.sender) ||
-                hasRole(EMPLOYER_ROLE, msg.sender),
-            "Unauthorized"
-        );
-        require(
-            jobs[jobId].id != 0 && !jobs[jobId].deleted,
-            "Job does not exist"
-        );
-        require(
-            applicantIndex < jobApplications[jobId].length,
-            "Invalid index"
-        );
+        if (
+            !hasRole(ADMIN_ROLE, msg.sender) &&
+            !hasRole(EMPLOYER_ROLE, msg.sender)
+        ) revert Unauthorized();
+        if (jobs[jobId].id == 0 || jobs[jobId].deleted)
+            revert JobDoesNotExist();
+        if (applicantIndex >= jobApplications[jobId].length)
+            revert InvalidIndex();
         return jobApplications[jobId][applicantIndex];
     }
 
     function getJobApplicationCount(
         uint256 jobId
     ) public view returns (uint256) {
-        require(
-            hasRole(ADMIN_ROLE, msg.sender) ||
-                hasRole(EMPLOYER_ROLE, msg.sender),
-            "Unauthorized"
-        );
+        if (
+            !hasRole(ADMIN_ROLE, msg.sender) &&
+            !hasRole(EMPLOYER_ROLE, msg.sender)
+        ) revert Unauthorized();
         return jobApplications[jobId].length;
     }
 
     function getJobApplications(
         uint256 jobId
     ) public view returns (ApplicationStruct[] memory) {
-        require(
-            hasRole(ADMIN_ROLE, msg.sender) ||
-                hasRole(EMPLOYER_ROLE, msg.sender),
-            "Unauthorized"
-        );
+        if (
+            !hasRole(ADMIN_ROLE, msg.sender) &&
+            !hasRole(EMPLOYER_ROLE, msg.sender)
+        ) revert Unauthorized();
         return jobApplications[jobId];
     }
 
     function withdrawFunds() public onlyOwner {
         uint256 balance = address(this).balance;
-        require(balance > 0, "Insufficient funds");
+        if (balance == 0) revert InsufficientFunds();
         payable(owner()).transfer(balance);
     }
 }
