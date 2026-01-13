@@ -10,6 +10,11 @@ async function main() {
 
   try {
     const [deployer] = await ethers.getSigners();
+    
+    if (!deployer) {
+      throw new Error('No deployer account found. Please set PRIVATE_KEY in .env file');
+    }
+    
     console.log('Deploying contracts with the account:', deployer.address);
 
     console.log(

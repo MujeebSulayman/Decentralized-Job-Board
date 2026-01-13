@@ -28,7 +28,7 @@ contract JobBoard is Ownable, ReentrancyGuard, AccessControl {
     mapping(address => address) public sponsoredUserForCaller;
 
     constructor(uint256 _serviceFee) {
-        require(_serviceFee > 0, "Service fee must be greater than 0");
+        require(_serviceFee > 0, "Invalid fee");
         serviceFee = _serviceFee;
 
         _grantRole(ADMIN_ROLE, msg.sender);
