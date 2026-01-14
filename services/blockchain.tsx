@@ -1,5 +1,6 @@
 import address from "../contracts/contractAddress.json";
 import abi from "../contracts/JobBoard.json";
+import paymasterAbi from "../artifacts/contracts/JobBoardPaymaster.sol/JobBoardPaymaster.json";
 import { ethers } from "ethers";
 import {
   ApplicationState,
@@ -20,26 +21,81 @@ const fromWei = (num: number | string | null): string => {
 let ethereum: any;
 let tx: any;
 
-
+// Error reporting utility
+const reportError = (error: any) => {
+  console.error("Blockchain Error:", error);
+  if (typeof error === "string") {
+    console.error(error);
+  } else if (error?.message) {
+    console.error(error.message);
+  } else {
+    console.error(JSON.stringify(error, null, 2));
+  }
+};
 
 if (typeof window !== "undefined") ethereum = (window as any).ethereum;
 
+// Paymaster constants
+const PAYMASTER_DOMAIN_NAME = "HemBoard";
+const PAYMASTER_DOMAIN_VERSION = "1";
+
 const getEthereumContract = async () => {
   const accounts = await ethereum?.request?.({ method: "eth_accounts" });
+  const contractAddress = address.JobBoardProxy;
 
   if (accounts?.length > 0) {
     const provider = new ethers.BrowserProvider(ethereum);
     const signer = await provider.getSigner();
-    const contracts = new ethers.Contract(address.JobBoard, abi.abi, signer);
+    const contracts = new ethers.Contract(contractAddress, abi.abi, signer);
 
     return contracts;
   } else {
     const provider = new ethers.JsonRpcProvider(
       process.env.NEXT_PUBLIC_RPC_URL
     );
-    const contracts = new ethers.Contract(address.JobBoard, abi.abi, provider);
+    const contracts = new ethers.Contract(contractAddress, abi.abi, provider);
 
     return contracts;
+  }
+};
+
+const getPaymasterContract = async () => {
+  const accounts = await ethereum?.request?.({ method: "eth_accounts" });
+  const paymasterAddress = address.JobBoardPaymaster;
+
+  if (accounts?.length > 0) {
+    const provider = new ethers.BrowserProvider(ethereum);
+    const signer = await provider.getSigner();
+    const paymaster = new ethers.Contract(
+      paymasterAddress,
+      paymasterAbi.abi || paymasterAbi,
+      signer
+    );
+    return paymaster;
+  } else {
+    const provider = new ethers.JsonRpcProvider(
+      process.env.NEXT_PUBLIC_RPC_URL
+    );
+    const paymaster = new ethers.Contract(
+      paymasterAddress,
+      paymasterAbi.abi || paymasterAbi,
+      provider
+    );
+    return paymaster;
+  }
+};
+
+const getChainId = async (): Promise<bigint> => {
+  if (ethereum) {
+    const provider = new ethers.BrowserProvider(ethereum);
+    const network = await provider.getNetwork();
+    return BigInt(network.chainId);
+  } else {
+    const provider = new ethers.JsonRpcProvider(
+      process.env.NEXT_PUBLIC_RPC_URL
+    );
+    const network = await provider.getNetwork();
+    return BigInt(network.chainId);
   }
 };
 
@@ -467,6 +523,425 @@ export const submitApplication = async (
   }
 };
 
+// ==================== Paymaster Functions ====================
+
+const getPaymasterNonce = async (userAddress: string): Promise<bigint> => {
+  try {
+    const paymaster = await getPaymasterContract();
+    const nonce = await paymaster.getNonce(userAddress);
+    return nonce;
+  } catch (error) {
+    console.error("Error getting paymaster nonce:", error);
+    throw error;
+  }
+};
+
+const createPostJobSignature = async (
+  userAddress: string,
+  orgName: string,
+  title: string,
+  description: string,
+  orgEmail: string,
+  logoCID: string,
+  expirationDays: number
+): Promise<string> => {
+  if (!ethereum) {
+    throw new Error("Please install MetaMask to use this application.");
+  }
+
+  try {
+    const provider = new ethers.BrowserProvider(ethereum);
+    const signer = await provider.getSigner();
+    const chainId = await getChainId();
+    const nonce = await getPaymasterNonce(userAddress);
+    const paymasterAddress = address.JobBoardPaymaster;
+
+    const domain = {
+      name: PAYMASTER_DOMAIN_NAME,
+      version: PAYMASTER_DOMAIN_VERSION,
+      chainId: chainId.toString(),
+      verifyingContract: paymasterAddress,
+    };
+
+    const types = {
+      PostJob: [
+        { name: "user", type: "address" },
+        { name: "orgName", type: "string" },
+        { name: "title", type: "string" },
+        { name: "description", type: "string" },
+        { name: "orgEmail", type: "string" },
+        { name: "logoCID", type: "string" },
+        { name: "expirationDays", type: "uint256" },
+        { name: "nonce", type: "uint256" },
+      ],
+    };
+
+    const value = {
+      user: userAddress,
+      orgName,
+      title,
+      description,
+      orgEmail,
+      logoCID,
+      expirationDays,
+      nonce: nonce.toString(),
+    };
+
+    const signature = await signer.signTypedData(domain, types, value);
+    return signature;
+  } catch (error) {
+    console.error("Error creating post job signature:", error);
+    throw error;
+  }
+};
+
+const createSubmitApplicationSignature = async (
+  userAddress: string,
+  jobId: number,
+  name: string,
+  email: string,
+  phoneNumber: string,
+  location: string,
+  cvCID: string
+): Promise<string> => {
+  if (!ethereum) {
+    throw new Error("Please install MetaMask to use this application.");
+  }
+
+  try {
+    const provider = new ethers.BrowserProvider(ethereum);
+    const signer = await provider.getSigner();
+    const chainId = await getChainId();
+    const nonce = await getPaymasterNonce(userAddress);
+    const paymasterAddress = address.JobBoardPaymaster;
+
+    const domain = {
+      name: PAYMASTER_DOMAIN_NAME,
+      version: PAYMASTER_DOMAIN_VERSION,
+      chainId: chainId.toString(),
+      verifyingContract: paymasterAddress,
+    };
+
+    const types = {
+      SubmitApplication: [
+        { name: "user", type: "address" },
+        { name: "jobId", type: "uint256" },
+        { name: "name", type: "string" },
+        { name: "email", type: "string" },
+        { name: "phoneNumber", type: "string" },
+        { name: "location", type: "string" },
+        { name: "cvCID", type: "string" },
+        { name: "nonce", type: "uint256" },
+      ],
+    };
+
+    const value = {
+      user: userAddress,
+      jobId,
+      name,
+      email,
+      phoneNumber,
+      location,
+      cvCID,
+      nonce: nonce.toString(),
+    };
+
+    const signature = await signer.signTypedData(domain, types, value);
+    return signature;
+  } catch (error) {
+    console.error("Error creating submit application signature:", error);
+    throw error;
+  }
+};
+
+const postJobMeta = async (job: JobPostParams): Promise<any> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+
+  try {
+    const provider = new ethers.BrowserProvider(ethereum);
+    const signer = await provider.getSigner();
+    const userAddress = await signer.getAddress();
+
+    const signature = await createPostJobSignature(
+      userAddress,
+      job.orgName,
+      job.title,
+      job.description,
+      job.orgEmail,
+      job.logoCID,
+      job.expirationDays
+    );
+
+    const paymaster = await getPaymasterContract();
+    const tx = await paymaster.postJobMeta(
+      userAddress,
+      job.orgName,
+      job.title,
+      job.description,
+      job.orgEmail,
+      job.logoCID,
+      job.fieldName || [],
+      job.isRequired || [],
+      job.jobType,
+      job.workMode,
+      job.minimumSalary,
+      job.maximumSalary,
+      job.expirationDays,
+      signature
+    );
+
+    const receipt = await tx.wait();
+    return receipt;
+  } catch (error) {
+    console.error("Error posting job via paymaster:", error);
+    reportError(error);
+    throw error;
+  }
+};
+
+const submitApplicationMeta = async (
+  jobId: number,
+  name: string,
+  email: string,
+  phoneNumber: string,
+  location: string,
+  fieldResponses: string[],
+  cvCID: string,
+  portfolioLink: string,
+  experience: string,
+  expectedSalary: string,
+  github: string
+): Promise<any> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+
+  try {
+    const provider = new ethers.BrowserProvider(ethereum);
+    const signer = await provider.getSigner();
+    const userAddress = await signer.getAddress();
+
+    const signature = await createSubmitApplicationSignature(
+      userAddress,
+      jobId,
+      name,
+      email,
+      phoneNumber,
+      location,
+      cvCID
+    );
+
+    const paymaster = await getPaymasterContract();
+    const tx = await paymaster.submitApplicationMeta(
+      userAddress,
+      jobId,
+      name,
+      email,
+      phoneNumber,
+      location,
+      fieldResponses,
+      cvCID,
+      portfolioLink,
+      experience,
+      expectedSalary,
+      github,
+      signature
+    );
+
+    const receipt = await tx.wait();
+    return receipt;
+  } catch (error) {
+    console.error("Error submitting application via paymaster:", error);
+    reportError(error);
+    throw error;
+  }
+};
+
+const sponsorTransaction = async (
+  userAddress: string,
+  amount: string
+): Promise<any> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+
+  try {
+    const paymaster = await getPaymasterContract();
+    const tx = await paymaster.sponsorTransaction(userAddress, {
+      value: toWei(parseFloat(amount)),
+    });
+    const receipt = await tx.wait();
+    return receipt;
+  } catch (error) {
+    console.error("Error sponsoring transaction:", error);
+    reportError(error);
+    throw error;
+  }
+};
+
+const setSponsorWhitelist = async (
+  sponsorAddress: string,
+  whitelisted: boolean
+): Promise<any> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+
+  try {
+    const paymaster = await getPaymasterContract();
+    const tx = await paymaster.setSponsorWhitelist(sponsorAddress, whitelisted);
+    const receipt = await tx.wait();
+    return receipt;
+  } catch (error) {
+    console.error("Error setting sponsor whitelist:", error);
+    reportError(error);
+    throw error;
+  }
+};
+
+const setPaymasterEnabled = async (enabled: boolean): Promise<any> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+
+  try {
+    const paymaster = await getPaymasterContract();
+    const tx = await paymaster.setPaymasterEnabled(enabled);
+    const receipt = await tx.wait();
+    return receipt;
+  } catch (error) {
+    console.error("Error setting paymaster enabled:", error);
+    reportError(error);
+    throw error;
+  }
+};
+
+const setMaxGasPerTransaction = async (maxGas: number): Promise<any> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+
+  try {
+    const paymaster = await getPaymasterContract();
+    const tx = await paymaster.setMaxGasPerTransaction(maxGas);
+    const receipt = await tx.wait();
+    return receipt;
+  } catch (error) {
+    console.error("Error setting max gas:", error);
+    reportError(error);
+    throw error;
+  }
+};
+
+const depositToPaymaster = async (amount: string): Promise<any> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+
+  try {
+    const paymaster = await getPaymasterContract();
+    const tx = await paymaster.deposit({ value: toWei(parseFloat(amount)) });
+    const receipt = await tx.wait();
+    return receipt;
+  } catch (error) {
+    console.error("Error depositing to paymaster:", error);
+    reportError(error);
+    throw error;
+  }
+};
+
+const withdrawFromPaymaster = async (amount: string): Promise<any> => {
+  if (!ethereum) {
+    return Promise.reject(
+      new Error("Please install MetaMask to use this application.")
+    );
+  }
+
+  try {
+    const paymaster = await getPaymasterContract();
+    const tx = await paymaster.withdraw(toWei(parseFloat(amount)));
+    const receipt = await tx.wait();
+    return receipt;
+  } catch (error) {
+    console.error("Error withdrawing from paymaster:", error);
+    reportError(error);
+    throw error;
+  }
+};
+
+const getPaymasterBalance = async (): Promise<string> => {
+  try {
+    const paymaster = await getPaymasterContract();
+    const balance = await paymaster.getBalance();
+    return fromWei(balance);
+  } catch (error) {
+    console.error("Error getting paymaster balance:", error);
+    throw error;
+  }
+};
+
+const getSponsorGasSpent = async (sponsorAddress: string): Promise<string> => {
+  try {
+    const paymaster = await getPaymasterContract();
+    const gasSpent = await paymaster.getSponsorGasSpent(sponsorAddress);
+    return gasSpent.toString();
+  } catch (error) {
+    console.error("Error getting sponsor gas spent:", error);
+    throw error;
+  }
+};
+
+const isSponsorWhitelisted = async (
+  sponsorAddress: string
+): Promise<boolean> => {
+  try {
+    const paymaster = await getPaymasterContract();
+    const whitelisted = await paymaster.whitelistedSponsors(sponsorAddress);
+    return whitelisted;
+  } catch (error) {
+    console.error("Error checking sponsor whitelist:", error);
+    throw error;
+  }
+};
+
+const getPaymasterEnabled = async (): Promise<boolean> => {
+  try {
+    const paymaster = await getPaymasterContract();
+    const enabled = await paymaster.paymasterEnabled();
+    return enabled;
+  } catch (error) {
+    console.error("Error getting paymaster enabled status:", error);
+    throw error;
+  }
+};
+
+const getMaxGasPerTransaction = async (): Promise<number> => {
+  try {
+    const paymaster = await getPaymasterContract();
+    const maxGas = await paymaster.maxGasPerTransaction();
+    return Number(maxGas);
+  } catch (error) {
+    console.error("Error getting max gas per transaction:", error);
+    throw error;
+  }
+};
+
 export {
   updateServiceFee,
   postJob,
@@ -487,5 +962,22 @@ export {
   getJobApplications,
   withdrawFunds,
   getServiceFee,
-  grantEmployerRole
+  grantEmployerRole,
+  // Paymaster functions
+  postJobMeta,
+  submitApplicationMeta,
+  sponsorTransaction,
+  getPaymasterNonce,
+  setSponsorWhitelist,
+  setPaymasterEnabled,
+  setMaxGasPerTransaction,
+  depositToPaymaster,
+  withdrawFromPaymaster,
+  getPaymasterBalance,
+  getSponsorGasSpent,
+  isSponsorWhitelisted,
+  getPaymasterEnabled,
+  getMaxGasPerTransaction,
+  createPostJobSignature,
+  createSubmitApplicationSignature,
 };

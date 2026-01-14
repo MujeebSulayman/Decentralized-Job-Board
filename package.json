@@ -13,7 +13,9 @@
 		"upgrade:base-sepolia": "hardhat run scripts/upgrade.js --network baseSepolia",
 		"verify:base": "hardhat run scripts/verify.js --network base",
 		"verify:base-sepolia": "hardhat run scripts/verify.js --network baseSepolia",
-		"compile": "hardhat compile"
+		"compile": "hardhat compile",
+		"test": "hardhat test",
+		"test:integration": "hardhat test test/JobBoard.integration.test.js"
 	},
 	"dependencies": {
 		"@heroicons/react": "^2.2.0",
