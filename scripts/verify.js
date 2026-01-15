@@ -56,24 +56,28 @@ async function main() {
 		try {
 			await hre.run('verify:verify', {
 				address: implementationAddress,
-				constructorArguments: [],
+				constructorArguments: [], // Empty constructor for upgradeable contracts
 			});
-			console.log('JobBoard Implementation verified successfully\n');
+			console.log('✓ JobBoard Implementation verified successfully\n');
 		} catch (error) {
 			const errorMsg = error.message || error.toString();
 			if (
 				errorMsg.includes('Already Verified') ||
 				errorMsg.includes('already verified')
 			) {
-				console.log('JobBoard Implementation already verified\n');
+				console.log('✓ JobBoard Implementation already verified\n');
 			} else {
 				console.error(
-					'ERROR: JobBoard Implementation verification failed:',
+					'✗ JobBoard Implementation verification failed:',
 					errorMsg
 				);
 				console.log('');
 			}
 		}
+	} else {
+		console.warn(
+			'WARNING: JobBoardImplementation address not found, skipping verification\n'
+		);
 	}
 
 	// Verify JobBoardPaymaster
@@ -83,16 +87,16 @@ async function main() {
 			address: paymasterAddress,
 			constructorArguments: [jobBoardAddress, 'HemBoard', '1'],
 		});
-		console.log('JobBoardPaymaster verified successfully\n');
+		console.log('✓ JobBoardPaymaster verified successfully\n');
 	} catch (error) {
 		const errorMsg = error.message || error.toString();
 		if (
 			errorMsg.includes('Already Verified') ||
 			errorMsg.includes('already verified')
 		) {
-			console.log('JobBoardPaymaster already verified\n');
+			console.log('✓ JobBoardPaymaster already verified\n');
 		} else {
-			console.error('ERROR: JobBoardPaymaster verification failed:', errorMsg);
+			console.error('✗ JobBoardPaymaster verification failed:', errorMsg);
 			console.log('');
 		}
 	}

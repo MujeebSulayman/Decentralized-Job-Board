@@ -27,7 +27,6 @@ contract JobBoardUpgradeable is
     bool public paymasterEnabled;
 
     mapping(address => bool) public sponsoredUsers;
-    mapping(bytes32 => bool) public sponsoredTransactions;
 
     mapping(address => address) public sponsoredUserForCaller;
 

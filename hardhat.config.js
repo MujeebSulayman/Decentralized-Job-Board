@@ -28,28 +28,28 @@ module.exports = {
 	},
 
 	etherscan: {
-		apiKey: {
-			base: process.env.BASESCAN_API_KEY || process.env.ETHERSCAN_API_KEY,
-			baseSepolia:
-				process.env.BASESCAN_API_KEY || process.env.ETHERSCAN_API_KEY,
+		apiKey: process.env.BASESCAN_API_KEY || process.env.ETHERSCAN_API_KEY,
+	},
+	chainDescriptors: {
+		84532: {
+			name: 'Base Sepolia',
+			blockExplorers: {
+				etherscan: {
+					name: 'Basescan',
+					url: 'https://sepolia.basescan.org',
+					apiUrl: 'https://api.etherscan.io/v2/api',
+				},
+			},
 		},
-		customChains: [
-			{
-				network: 'base',
-				chainId: 8453,
-				urls: {
-					apiURL: 'https://api.basescan.org/api',
-					browserURL: 'https://basescan.org',
+		8453: {
+			name: 'Base',
+			blockExplorers: {
+				etherscan: {
+					name: 'Basescan',
+					url: 'https://basescan.org',
+					apiUrl: 'https://api.etherscan.io/v2/api',
 				},
 			},
-			{
-				network: 'baseSepolia',
-				chainId: 84532,
-				urls: {
-					apiURL: 'https://api-sepolia.basescan.org/api',
-					browserURL: 'https://sepolia.basescan.org',
-				},
-			},
-		],
+		},
 	},
 };

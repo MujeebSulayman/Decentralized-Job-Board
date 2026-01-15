@@ -18,34 +18,14 @@ import {
 	injectedWallet,
 } from '@rainbow-me/rainbowkit/wallets';
 import { WagmiProvider } from 'wagmi';
-import {
-	mainnet,
-	polygon,
-	optimism,
-	arbitrum,
-	base,
-	sepolia,
-} from 'wagmi/chains';
+import { baseSepolia } from 'wagmi/chains';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
-
-// Create a custom Sepolia configuration that uses our Next.js proxy to avoid CORS issues
-const customSepolia = {
-	...sepolia,
-	rpcUrls: {
-		default: {
-			http: ['/api/eth'],
-		},
-		public: {
-			http: ['/api/eth'],
-		},
-	},
-};
 
 const config = getDefaultConfig({
 	appName: 'HemBoard',
 	projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID!,
-	chains: [mainnet, customSepolia, polygon, optimism, arbitrum, base],
+	chains: [baseSepolia],
 	ssr: true,
 	wallets: [
 		{
