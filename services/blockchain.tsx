@@ -1,5 +1,7 @@
 import address from "../contracts/contractAddress.json";
-import abi from "../artifacts/contracts/JobBoardUpgradeable.sol/JobBoardUpgradeable.json";
+
+import abi from "../contracts/JobBoard.json";
+
 import paymasterAbi from "../artifacts/contracts/JobBoardPaymaster.sol/JobBoardPaymaster.json";
 import { ethers } from "ethers";
 import {
