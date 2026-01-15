@@ -23,7 +23,6 @@ const fromWei = (num: number | string | null): string => {
 let ethereum: any;
 let tx: any;
 
-// Error reporting utility
 const reportError = (error: any) => {
   console.error("Blockchain Error:", error);
   if (typeof error === "string") {
@@ -37,11 +36,9 @@ const reportError = (error: any) => {
 
 if (typeof window !== "undefined") ethereum = (window as any).ethereum;
 
-// Paymaster constants
 const PAYMASTER_DOMAIN_NAME = "HemBoard";
 const PAYMASTER_DOMAIN_VERSION = "1";
 
-// Get read-only contract (always uses public RPC, no wallet needed)
 const getReadOnlyContract = () => {
   const contractAddress = address.JobBoardProxy;
   const provider = new ethers.JsonRpcProvider(
@@ -54,14 +51,12 @@ const getReadOnlyContract = () => {
 const getEthereumContract = async () => {
   const contractAddress = address.JobBoardProxy;
 
-  // Try to get accounts if wallet is available
   let accounts: string[] = [];
   try {
     if (ethereum) {
       accounts = await ethereum.request({ method: "eth_accounts" });
     }
   } catch (error) {
-    // Wallet not available or not connected, use read-only
   }
 
   if (accounts?.length > 0 && ethereum) {
@@ -70,12 +65,10 @@ const getEthereumContract = async () => {
     const contracts = new ethers.Contract(contractAddress, abi.abi, signer);
     return contracts;
   } else {
-    // Use read-only provider (no wallet needed)
     return getReadOnlyContract();
   }
 };
 
-// Get read-only paymaster contract (always uses public RPC, no wallet needed)
 const getReadOnlyPaymasterContract = () => {
   const paymasterAddress = address.JobBoardPaymaster;
   const provider = new ethers.JsonRpcProvider(
@@ -92,14 +85,12 @@ const getReadOnlyPaymasterContract = () => {
 const getPaymasterContract = async () => {
   const paymasterAddress = address.JobBoardPaymaster;
 
-  // Try to get accounts if wallet is available
   let accounts: string[] = [];
   try {
     if (ethereum) {
       accounts = await ethereum.request({ method: "eth_accounts" });
     }
   } catch (error) {
-    // Wallet not available or not connected, use read-only
   }
 
   if (accounts?.length > 0 && ethereum) {
@@ -112,7 +103,6 @@ const getPaymasterContract = async () => {
     );
     return paymaster;
   } else {
-    // Use read-only provider (no wallet needed)
     return getReadOnlyPaymasterContract();
   }
 };
@@ -125,10 +115,8 @@ const getChainId = async (): Promise<bigint> => {
       return BigInt(network.chainId);
     }
   } catch (error) {
-    // Wallet not available, use public RPC
   }
 
-  // Always fallback to public RPC
   const provider = new ethers.JsonRpcProvider(
     process.env.NEXT_PUBLIC_RPC_URL || "https://sepolia.base.org"
   );
@@ -413,7 +401,6 @@ const getAllJobs = async (): Promise<JobStruct[]> => {
     return jobs;
   } catch (error) {
     console.error("Error fetching all jobs:", error);
-    // Return empty array on error to prevent UI crashes
     return [];
   }
 };
@@ -450,13 +437,13 @@ const getJobApplicantDetails = async (
     const contract = await getEthereumContract();
     const jobApplicants = await contract.getJobApplicants(jobId);
 
-    console.log("Job Applicants:", jobApplicants); // Debug log
+    console.log("Job Applicants:", jobApplicants);
 
     const applicantIndex = jobApplicants.findIndex(
       (address: string) => address.toLowerCase() === applicant.toLowerCase()
     );
 
-    console.log("Applicant Index:", applicantIndex); // Debug log
+    console.log("Applicant Index:", applicantIndex);
 
     if (applicantIndex === -1) return null;
 
@@ -465,7 +452,7 @@ const getJobApplicantDetails = async (
       applicantIndex
     );
 
-    console.log("Job Applicant Details:", jobApplicantDetails); // Debug log
+    console.log("Job Applicant Details:", jobApplicantDetails);
 
     return jobApplicantDetails;
   } catch (error) {
@@ -526,7 +513,6 @@ const getServiceFee = async (): Promise<string> => {
     return fromWei(fee);
   } catch (error) {
     console.error("Error getting service fee:", error);
-    // Return default fee on error
     return "0.01";
   }
 };
@@ -571,8 +557,6 @@ export const submitApplication = async (
     throw error;
   }
 };
-
-// ==================== Paymaster Functions ====================
 
 const getPaymasterNonce = async (userAddress: string): Promise<bigint> => {
   try {
@@ -1012,7 +996,6 @@ export {
   withdrawFunds,
   getServiceFee,
   grantEmployerRole,
-  // Paymaster functions
   postJobMeta,
   submitApplicationMeta,
   sponsorTransaction,
