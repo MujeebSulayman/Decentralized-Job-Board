@@ -29,8 +29,6 @@ contract JobBoardPaymaster is Ownable, EIP712 {
 
     mapping(address => uint256) public sponsorGasSpent;
 
-    uint256 public maxGasPerTransaction = 500000;
-
     bool public paymasterEnabled = true;
 
     event TransactionSponsored(
@@ -42,7 +40,6 @@ contract JobBoardPaymaster is Ownable, EIP712 {
 
     event SponsorWhitelisted(address indexed sponsor, bool whitelisted);
     event PaymasterToggled(bool enabled);
-    event MaxGasUpdated(uint256 oldMax, uint256 newMax);
     event FundsDeposited(address indexed depositor, uint256 amount);
     event FundsWithdrawn(address indexed recipient, uint256 amount);
 
@@ -269,12 +266,6 @@ contract JobBoardPaymaster is Ownable, EIP712 {
     function setPaymasterEnabled(bool enabled) external onlyOwner {
         paymasterEnabled = enabled;
         emit PaymasterToggled(enabled);
-    }
-
-    function setMaxGasPerTransaction(uint256 maxGas) external onlyOwner {
-        uint256 oldMax = maxGasPerTransaction;
-        maxGasPerTransaction = maxGas;
-        emit MaxGasUpdated(oldMax, maxGas);
     }
 
     function deposit() external payable {
