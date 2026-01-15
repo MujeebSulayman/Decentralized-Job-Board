@@ -117,15 +117,15 @@ export const getIPFSGatewayUrl = (cid: string): string => {
 	if (cleanCid.startsWith('ipfs://')) {
 		cleanCid = cleanCid.replace('ipfs://', '');
 	}
-	
+
 	// Remove any leading/trailing slashes
 	cleanCid = cleanCid.replace(/^\/+|\/+$/g, '');
-	
+
 	// If it's already a full URL, extract the CID
 	if (cleanCid.includes('/ipfs/')) {
 		cleanCid = cleanCid.split('/ipfs/')[1]?.split('/')[0] || cleanCid;
 	}
-	
+
 	// If it's already a full URL, return it
 	if (cleanCid.startsWith('http://') || cleanCid.startsWith('https://')) {
 		return cleanCid;
