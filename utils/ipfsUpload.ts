@@ -104,9 +104,33 @@ export const uploadToIPFS = async (
 
 /**
  * Generate IPFS gateway URL for a given CID
- * @param cid Content Identifier
+ * @param cid Content Identifier (can include ipfs:// prefix or be just the CID)
  * @returns Full IPFS gateway URL
  */
 export const getIPFSGatewayUrl = (cid: string): string => {
-	return `https://gateway.pinata.cloud/ipfs/${cid}`;
+	if (!cid || cid.trim() === '') {
+		return '';
+	}
+
+	// Remove ipfs:// prefix if present
+	let cleanCid = cid.trim();
+	if (cleanCid.startsWith('ipfs://')) {
+		cleanCid = cleanCid.replace('ipfs://', '');
+	}
+	
+	// Remove any leading/trailing slashes
+	cleanCid = cleanCid.replace(/^\/+|\/+$/g, '');
+	
+	// If it's already a full URL, extract the CID
+	if (cleanCid.includes('/ipfs/')) {
+		cleanCid = cleanCid.split('/ipfs/')[1]?.split('/')[0] || cleanCid;
+	}
+	
+	// If it's already a full URL, return it
+	if (cleanCid.startsWith('http://') || cleanCid.startsWith('https://')) {
+		return cleanCid;
+	}
+
+	// Use Pinata gateway
+	return `https://gateway.pinata.cloud/ipfs/${cleanCid}`;
 };
