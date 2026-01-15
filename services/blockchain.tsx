@@ -41,31 +41,68 @@ if (typeof window !== "undefined") ethereum = (window as any).ethereum;
 const PAYMASTER_DOMAIN_NAME = "HemBoard";
 const PAYMASTER_DOMAIN_VERSION = "1";
 
+// Get read-only contract (always uses public RPC, no wallet needed)
+const getReadOnlyContract = () => {
+  const contractAddress = address.JobBoardProxy;
+  const provider = new ethers.JsonRpcProvider(
+    process.env.NEXT_PUBLIC_RPC_URL || "https://sepolia.base.org"
+  );
+  const contracts = new ethers.Contract(contractAddress, abi.abi, provider);
+  return contracts;
+};
+
 const getEthereumContract = async () => {
-  const accounts = await ethereum?.request?.({ method: "eth_accounts" });
   const contractAddress = address.JobBoardProxy;
 
-  if (accounts?.length > 0) {
+  // Try to get accounts if wallet is available
+  let accounts: string[] = [];
+  try {
+    if (ethereum) {
+      accounts = await ethereum.request({ method: "eth_accounts" });
+    }
+  } catch (error) {
+    // Wallet not available or not connected, use read-only
+  }
+
+  if (accounts?.length > 0 && ethereum) {
     const provider = new ethers.BrowserProvider(ethereum);
     const signer = await provider.getSigner();
     const contracts = new ethers.Contract(contractAddress, abi.abi, signer);
-
     return contracts;
   } else {
-    const provider = new ethers.JsonRpcProvider(
-      process.env.NEXT_PUBLIC_RPC_URL
-    );
-    const contracts = new ethers.Contract(contractAddress, abi.abi, provider);
-
-    return contracts;
+    // Use read-only provider (no wallet needed)
+    return getReadOnlyContract();
   }
 };
 
+// Get read-only paymaster contract (always uses public RPC, no wallet needed)
+const getReadOnlyPaymasterContract = () => {
+  const paymasterAddress = address.JobBoardPaymaster;
+  const provider = new ethers.JsonRpcProvider(
+    process.env.NEXT_PUBLIC_RPC_URL || "https://sepolia.base.org"
+  );
+  const paymaster = new ethers.Contract(
+    paymasterAddress,
+    paymasterAbi.abi || paymasterAbi,
+    provider
+  );
+  return paymaster;
+};
+
 const getPaymasterContract = async () => {
-  const accounts = await ethereum?.request?.({ method: "eth_accounts" });
   const paymasterAddress = address.JobBoardPaymaster;
 
-  if (accounts?.length > 0) {
+  // Try to get accounts if wallet is available
+  let accounts: string[] = [];
+  try {
+    if (ethereum) {
+      accounts = await ethereum.request({ method: "eth_accounts" });
+    }
+  } catch (error) {
+    // Wallet not available or not connected, use read-only
+  }
+
+  if (accounts?.length > 0 && ethereum) {
     const provider = new ethers.BrowserProvider(ethereum);
     const signer = await provider.getSigner();
     const paymaster = new ethers.Contract(
@@ -75,30 +112,28 @@ const getPaymasterContract = async () => {
     );
     return paymaster;
   } else {
-    const provider = new ethers.JsonRpcProvider(
-      process.env.NEXT_PUBLIC_RPC_URL
-    );
-    const paymaster = new ethers.Contract(
-      paymasterAddress,
-      paymasterAbi.abi || paymasterAbi,
-      provider
-    );
-    return paymaster;
+    // Use read-only provider (no wallet needed)
+    return getReadOnlyPaymasterContract();
   }
 };
 
 const getChainId = async (): Promise<bigint> => {
-  if (ethereum) {
-    const provider = new ethers.BrowserProvider(ethereum);
-    const network = await provider.getNetwork();
-    return BigInt(network.chainId);
-  } else {
-    const provider = new ethers.JsonRpcProvider(
-      process.env.NEXT_PUBLIC_RPC_URL
-    );
-    const network = await provider.getNetwork();
-    return BigInt(network.chainId);
+  try {
+    if (ethereum) {
+      const provider = new ethers.BrowserProvider(ethereum);
+      const network = await provider.getNetwork();
+      return BigInt(network.chainId);
+    }
+  } catch (error) {
+    // Wallet not available, use public RPC
   }
+
+  // Always fallback to public RPC
+  const provider = new ethers.JsonRpcProvider(
+    process.env.NEXT_PUBLIC_RPC_URL || "https://sepolia.base.org"
+  );
+  const network = await provider.getNetwork();
+  return BigInt(network.chainId);
 };
 
 const updateServiceFee = async (newFee: number): Promise<void> => {
@@ -361,15 +396,26 @@ const closeJob = async (jobId: number): Promise<void> => {
 };
 
 const getJob = async (jobId: number): Promise<JobStruct> => {
-  const contract = await getEthereumContract();
-  const job = await contract.getJob(jobId);
-  return job;
+  try {
+    const contract = getReadOnlyContract();
+    const job = await contract.getJob(jobId);
+    return job;
+  } catch (error) {
+    console.error("Error fetching job:", error);
+    throw error;
+  }
 };
 
 const getAllJobs = async (): Promise<JobStruct[]> => {
-  const contract = await getEthereumContract();
-  const jobs = await contract.getAllJobs();
-  return jobs;
+  try {
+    const contract = getReadOnlyContract();
+    const jobs = await contract.getAllJobs();
+    return jobs;
+  } catch (error) {
+    console.error("Error fetching all jobs:", error);
+    // Return empty array on error to prevent UI crashes
+    return [];
+  }
 };
 
 const getMyJobs = async (): Promise<JobStruct[]> => {
@@ -430,9 +476,9 @@ const getJobApplicantDetails = async (
 
 const getJobApplicationCount = async (jobId: number): Promise<number> => {
   try {
-    const contract = await getEthereumContract();
+    const contract = getReadOnlyContract();
     const count = await contract.getJobApplicationCount(jobId);
-    return count;
+    return Number(count);
   } catch (error) {
     console.error("Error fetching job application count:", error);
     return 0;
@@ -475,12 +521,13 @@ const withdrawFunds = async (): Promise<void> => {
 
 const getServiceFee = async (): Promise<string> => {
   try {
-    const contract = await getEthereumContract();
+    const contract = getReadOnlyContract();
     const fee = await contract.serviceFee();
     return fromWei(fee);
   } catch (error) {
     console.error("Error getting service fee:", error);
-    throw error;
+    // Return default fee on error
+    return "0.01";
   }
 };
 
@@ -529,7 +576,7 @@ export const submitApplication = async (
 
 const getPaymasterNonce = async (userAddress: string): Promise<bigint> => {
   try {
-    const paymaster = await getPaymasterContract();
+    const paymaster = getReadOnlyPaymasterContract();
     const nonce = await paymaster.getNonce(userAddress);
     return nonce;
   } catch (error) {
@@ -889,7 +936,7 @@ const withdrawFromPaymaster = async (amount: string): Promise<any> => {
 
 const getPaymasterBalance = async (): Promise<string> => {
   try {
-    const paymaster = await getPaymasterContract();
+    const paymaster = getReadOnlyPaymasterContract();
     const balance = await paymaster.getBalance();
     return fromWei(balance);
   } catch (error) {
@@ -900,7 +947,7 @@ const getPaymasterBalance = async (): Promise<string> => {
 
 const getSponsorGasSpent = async (sponsorAddress: string): Promise<string> => {
   try {
-    const paymaster = await getPaymasterContract();
+    const paymaster = getReadOnlyPaymasterContract();
     const gasSpent = await paymaster.getSponsorGasSpent(sponsorAddress);
     return gasSpent.toString();
   } catch (error) {
@@ -913,7 +960,7 @@ const isSponsorWhitelisted = async (
   sponsorAddress: string
 ): Promise<boolean> => {
   try {
-    const paymaster = await getPaymasterContract();
+    const paymaster = getReadOnlyPaymasterContract();
     const whitelisted = await paymaster.whitelistedSponsors(sponsorAddress);
     return whitelisted;
   } catch (error) {
@@ -924,7 +971,7 @@ const isSponsorWhitelisted = async (
 
 const getPaymasterEnabled = async (): Promise<boolean> => {
   try {
-    const paymaster = await getPaymasterContract();
+    const paymaster = getReadOnlyPaymasterContract();
     const enabled = await paymaster.paymasterEnabled();
     return enabled;
   } catch (error) {
