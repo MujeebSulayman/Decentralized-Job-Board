@@ -912,24 +912,6 @@ const setPaymasterEnabled = async (enabled: boolean): Promise<any> => {
   }
 };
 
-const setMaxGasPerTransaction = async (maxGas: number): Promise<any> => {
-  if (!ethereum) {
-    return Promise.reject(
-      new Error("Please install MetaMask to use this application.")
-    );
-  }
-
-  try {
-    const paymaster = await getPaymasterContract();
-    const tx = await paymaster.setMaxGasPerTransaction(maxGas);
-    const receipt = await tx.wait();
-    return receipt;
-  } catch (error) {
-    console.error("Error setting max gas:", error);
-    reportError(error);
-    throw error;
-  }
-};
 
 const depositToPaymaster = async (amount: string): Promise<any> => {
   if (!ethereum) {
@@ -1015,16 +997,6 @@ const getPaymasterEnabled = async (): Promise<boolean> => {
   }
 };
 
-const getMaxGasPerTransaction = async (): Promise<number> => {
-  try {
-    const paymaster = await getPaymasterContract();
-    const maxGas = await paymaster.maxGasPerTransaction();
-    return Number(maxGas);
-  } catch (error) {
-    console.error("Error getting max gas per transaction:", error);
-    throw error;
-  }
-};
 
 export {
   updateServiceFee,
@@ -1053,14 +1025,12 @@ export {
   getPaymasterNonce,
   setSponsorWhitelist,
   setPaymasterEnabled,
-  setMaxGasPerTransaction,
   depositToPaymaster,
   withdrawFromPaymaster,
   getPaymasterBalance,
   getSponsorGasSpent,
   isSponsorWhitelisted,
   getPaymasterEnabled,
-  getMaxGasPerTransaction,
   createPostJobSignature,
   createSubmitApplicationSignature,
 };
