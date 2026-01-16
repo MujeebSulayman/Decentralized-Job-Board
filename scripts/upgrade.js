@@ -15,6 +15,10 @@ const path = require('path');
  * - Can only add new variables at the END
  * - Never remove or reorder variables
  * - Use storage gaps for future-proofing
+ * 
+ * NOTE: This script only upgrades JobBoardUpgradeable.
+ * - JobBoardPaymaster is NOT upgradeable (redeploy if needed)
+ * - JobBoardRelayer is NOT upgradeable (redeploy if needed)
  */
 async function main() {
   const network = await ethers.provider.getNetwork();

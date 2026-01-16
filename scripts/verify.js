@@ -26,6 +26,7 @@ async function main() {
 
 	const jobBoardAddress = addresses.JobBoardProxy || addresses.JobBoard;
 	const paymasterAddress = addresses.JobBoardPaymaster;
+	const relayerAddress = addresses.JobBoardRelayer;
 
 	if (!jobBoardAddress || !paymasterAddress) {
 		console.error(
@@ -38,6 +39,9 @@ async function main() {
 	console.log('Contract addresses:');
 	console.log('  JobBoard:', jobBoardAddress);
 	console.log('  JobBoardPaymaster:', paymasterAddress);
+	if (relayerAddress) {
+		console.log('  JobBoardRelayer:', relayerAddress);
+	}
 	console.log('');
 
 	// Check for API key
@@ -101,6 +105,33 @@ async function main() {
 		}
 	}
 
+	// Verify JobBoardRelayer
+	if (relayerAddress) {
+		console.log('Verifying JobBoardRelayer...');
+		try {
+			await hre.run('verify:verify', {
+				address: relayerAddress,
+				constructorArguments: [paymasterAddress, 'HemBoardRelayer', '1'],
+			});
+			console.log('✓ JobBoardRelayer verified successfully\n');
+		} catch (error) {
+			const errorMsg = error.message || error.toString();
+			if (
+				errorMsg.includes('Already Verified') ||
+				errorMsg.includes('already verified')
+			) {
+				console.log('✓ JobBoardRelayer already verified\n');
+			} else {
+				console.error('✗ JobBoardRelayer verification failed:', errorMsg);
+				console.log('');
+			}
+		}
+	} else {
+		console.warn(
+			'WARNING: JobBoardRelayer address not found, skipping verification\n'
+		);
+	}
+
 	console.log('=== Verification Summary ===');
 	const explorerUrl =
 		network.chainId === 8453n
@@ -115,6 +146,9 @@ async function main() {
 		);
 	}
 	console.log(`Paymaster: ${explorerUrl}/address/${paymasterAddress}`);
+	if (relayerAddress) {
+		console.log(`Relayer: ${explorerUrl}/address/${relayerAddress}`);
+	}
 }
 
 main()

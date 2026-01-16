@@ -1,7 +1,12 @@
 const { ethers, upgrades } = require('hardhat');
 
 /**
- * @dev Deploy upgradeable JobBoard contract using OpenZeppelin's proxy pattern
+ * @dev Deploy all contracts: JobBoard (upgradeable), Paymaster, and Relayer
+ *
+ * DEPLOYS:
+ * 1. JobBoardUpgradeable (proxy pattern - upgradeable)
+ * 2. JobBoardPaymaster (regular contract - not upgradeable)
+ * 3. JobBoardRelayer (regular contract - not upgradeable)
  *
  * KEY CONCEPTS:
  * 1. Proxy Pattern:
@@ -122,7 +127,25 @@ async function main() {
 		await enableTx.wait();
 		console.log('Paymaster enabled\n');
 
-		// Step 6: Save addresses
+		// Step 6: Deploy Relayer
+		console.log('Deploying JobBoardRelayer...');
+		const JobBoardRelayer = await ethers.getContractFactory('JobBoardRelayer');
+		const relayer = await JobBoardRelayer.deploy(
+			paymasterAddress,
+			'HemBoardRelayer',
+			'1'
+		);
+		await relayer.waitForDeployment();
+		const relayerAddress = await relayer.getAddress();
+		console.log('Relayer deployed at:', relayerAddress, '\n');
+
+		// Step 7: Authorize relayer in paymaster
+		console.log('Authorizing relayer in paymaster...');
+		const authTx = await paymaster.setAuthorizedRelayer(relayerAddress, true);
+		await authTx.wait();
+		console.log('Relayer authorized in paymaster\n');
+
+		// Step 8: Save addresses
 		const fs = require('fs');
 		const contractsDir = __dirname + '/../contracts';
 
@@ -139,6 +162,7 @@ async function main() {
 					JobBoardImplementation: implementationAddress,
 					ProxyAdmin: adminAddress,
 					JobBoardPaymaster: paymasterAddress,
+					JobBoardRelayer: relayerAddress,
 				},
 				undefined,
 				2
@@ -153,13 +177,18 @@ async function main() {
 		console.log('Implementation:', implementationAddress);
 		console.log('ProxyAdmin:', adminAddress);
 		console.log('Paymaster:', paymasterAddress);
+		console.log('Relayer:', relayerAddress);
 		console.log('\nIMPORTANT:');
 		console.log('  - Deployer is the OWNER and ADMIN of JobBoard');
-		console.log('  - Deployer is the OWNER of Paymaster');
+		console.log('  - Deployer is the OWNER of Paymaster and Relayer');
 		console.log('  - Always use PROXY address for interactions');
 		console.log('  - ProxyAdmin controls upgrades (keep private key safe!)');
 		console.log(
 			'  - Keep deployer private key secure - it controls everything!'
+		);
+		console.log('  - Fund the paymaster to cover gas reimbursements');
+		console.log(
+			'  - Fund the relayer wallet (RELAYER_PRIVATE_KEY) for initial gas'
 		);
 		console.log('\nTo upgrade later, run: npm run upgrade:base-sepolia');
 	} catch (error) {

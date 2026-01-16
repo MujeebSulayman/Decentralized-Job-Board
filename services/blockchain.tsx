@@ -52,6 +52,8 @@ if (typeof window !== "undefined") ethereum = (window as any).ethereum;
 
 const PAYMASTER_DOMAIN_NAME = "HemBoard";
 const PAYMASTER_DOMAIN_VERSION = "1";
+const RELAYER_DOMAIN_NAME = "HemBoardRelayer";
+const RELAYER_DOMAIN_VERSION = "1";
 
 const getReadOnlyContract = () => {
   const contractAddress = address.JobBoardProxy;
@@ -634,6 +636,27 @@ const getPaymasterNonce = async (userAddress: string): Promise<bigint> => {
   }
 };
 
+const getRelayerNonce = async (userAddress: string): Promise<bigint> => {
+  try {
+    const relayerAddress = address.JobBoardRelayer;
+    if (!relayerAddress) {
+      throw new Error("Relayer contract not deployed");
+    }
+    const rpcUrl = process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL;
+    if (!rpcUrl) {
+      throw new Error("NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL is not set");
+    }
+    const provider = new ethers.JsonRpcProvider(rpcUrl);
+    const relayerAbi = ["function getNonce(address user) external view returns (uint256)"];
+    const relayer = new ethers.Contract(relayerAddress, relayerAbi, provider);
+    const nonce = await relayer.getNonce(userAddress);
+    return nonce;
+  } catch (error) {
+    console.error("Error getting relayer nonce:", error);
+    throw error;
+  }
+};
+
 const createPostJobSignature = async (
   userAddress: string,
   orgName: string,
@@ -763,8 +786,10 @@ const postJobMeta = async (job: JobPostParams): Promise<any> => {
     const provider = new ethers.BrowserProvider(ethereum);
     const signer = await provider.getSigner();
     const userAddress = await signer.getAddress();
+    const chainId = await getChainId();
 
-    const signature = await createPostJobSignature(
+    // Step 1: Create paymaster signature
+    const paymasterSignature = await createPostJobSignature(
       userAddress,
       job.orgName,
       job.title,
@@ -774,8 +799,13 @@ const postJobMeta = async (job: JobPostParams): Promise<any> => {
       job.expirationDays
     );
 
-    const paymaster = await getPaymasterContract();
-    const tx = await paymaster.postJobMeta(
+    // Step 2: Encode function call to paymaster
+    const paymasterAddress = address.JobBoardPaymaster;
+    const paymasterInterface = new ethers.Interface([
+      "function postJobMeta(address user, string memory orgName, string memory title, string memory description, string memory orgEmail, string memory logoCID, string[] memory fieldName, bool[] memory isRequired, uint256 jobType, uint256 workMode, string memory minimumSalary, string memory maximumSalary, uint256 expirationDays, bytes memory signature)",
+    ]);
+
+    const callData = paymasterInterface.encodeFunctionData("postJobMeta", [
       userAddress,
       job.orgName,
       job.title,
@@ -786,16 +816,73 @@ const postJobMeta = async (job: JobPostParams): Promise<any> => {
       job.isRequired || [],
       job.jobType,
       job.workMode,
-      job.minimumSalary,
-      job.maximumSalary,
+      job.minimumSalary || "",
+      job.maximumSalary || "",
       job.expirationDays,
-      signature
+      paymasterSignature,
+    ]);
+
+    // Step 3: Create relayer signature
+    const relayerAddress = address.JobBoardRelayer;
+    if (!relayerAddress) {
+      throw new Error("Relayer contract not deployed. Please deploy the relayer contract first.");
+    }
+
+    const relayerNonce = await getRelayerNonce(userAddress);
+    const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+
+    const relayerDomain = {
+      name: RELAYER_DOMAIN_NAME,
+      version: RELAYER_DOMAIN_VERSION,
+      chainId: chainId.toString(),
+      verifyingContract: relayerAddress,
+    };
+
+    const relayerTypes = {
+      RelayRequest: [
+        { name: "user", type: "address" },
+        { name: "data", type: "bytes" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" },
+      ],
+    };
+
+    const relayerValue = {
+      user: userAddress,
+      data: callData,
+      nonce: relayerNonce.toString(),
+      deadline: deadline.toString(),
+    };
+
+    const relayerSignature = await signer.signTypedData(
+      relayerDomain,
+      relayerTypes,
+      relayerValue
     );
 
-    const receipt = await tx.wait();
-    return receipt;
+    // Step 4: Send to relayer API
+    const response = await fetch("/api/relay/post-job", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userAddress,
+        callData,
+        deadline,
+        relayerSignature,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to relay transaction");
+    }
+
+    return data;
   } catch (error) {
-    console.error("Error posting job via paymaster:", error);
+    console.error("Error posting job via relayer:", error);
     reportError(error);
     throw error;
   }
@@ -824,8 +911,10 @@ const submitApplicationMeta = async (
     const provider = new ethers.BrowserProvider(ethereum);
     const signer = await provider.getSigner();
     const userAddress = await signer.getAddress();
+    const chainId = await getChainId();
 
-    const signature = await createSubmitApplicationSignature(
+    // Step 1: Create paymaster signature
+    const paymasterSignature = await createSubmitApplicationSignature(
       userAddress,
       jobId,
       name,
@@ -835,27 +924,89 @@ const submitApplicationMeta = async (
       cvCID
     );
 
-    const paymaster = await getPaymasterContract();
-    const tx = await paymaster.submitApplicationMeta(
+    // Step 2: Encode function call to paymaster
+    const paymasterAddress = address.JobBoardPaymaster;
+    const paymasterInterface = new ethers.Interface([
+      "function submitApplicationMeta(address user, uint256 jobId, string memory name, string memory email, string memory phoneNumber, string memory location, string[] memory fieldResponses, string memory cvCID, string memory portfolioLink, string memory experience, string memory expectedSalary, string memory github, bytes memory signature)",
+    ]);
+
+    const callData = paymasterInterface.encodeFunctionData("submitApplicationMeta", [
       userAddress,
       jobId,
       name,
       email,
       phoneNumber,
       location,
-      fieldResponses,
+      fieldResponses || [],
       cvCID,
-      portfolioLink,
-      experience,
-      expectedSalary,
-      github,
-      signature
+      portfolioLink || "",
+      experience || "",
+      expectedSalary || "",
+      github || "",
+      paymasterSignature,
+    ]);
+
+    // Step 3: Create relayer signature
+    const relayerAddress = address.JobBoardRelayer;
+    if (!relayerAddress) {
+      throw new Error("Relayer contract not deployed. Please deploy the relayer contract first.");
+    }
+
+    const relayerNonce = await getRelayerNonce(userAddress);
+    const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+
+    const relayerDomain = {
+      name: RELAYER_DOMAIN_NAME,
+      version: RELAYER_DOMAIN_VERSION,
+      chainId: chainId.toString(),
+      verifyingContract: relayerAddress,
+    };
+
+    const relayerTypes = {
+      RelayRequest: [
+        { name: "user", type: "address" },
+        { name: "data", type: "bytes" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" },
+      ],
+    };
+
+    const relayerValue = {
+      user: userAddress,
+      data: callData,
+      nonce: relayerNonce.toString(),
+      deadline: deadline.toString(),
+    };
+
+    const relayerSignature = await signer.signTypedData(
+      relayerDomain,
+      relayerTypes,
+      relayerValue
     );
 
-    const receipt = await tx.wait();
-    return receipt;
+    // Step 4: Send to relayer API
+    const response = await fetch("/api/relay/submit-application", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userAddress,
+        callData,
+        deadline,
+        relayerSignature,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to relay transaction");
+    }
+
+    return data;
   } catch (error) {
-    console.error("Error submitting application via paymaster:", error);
+    console.error("Error submitting application via relayer:", error);
     reportError(error);
     throw error;
   }

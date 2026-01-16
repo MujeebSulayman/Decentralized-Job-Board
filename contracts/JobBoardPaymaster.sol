@@ -26,6 +26,7 @@ contract JobBoardPaymaster is Ownable, EIP712 {
     mapping(bytes32 => bool) public sponsoredTransactions;
 
     mapping(address => bool) public whitelistedSponsors;
+    mapping(address => bool) public authorizedRelayers;
 
     mapping(address => uint256) public sponsorGasSpent;
 
@@ -280,6 +281,35 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         address sponsor
     ) external view returns (uint256) {
         return sponsorGasSpent[sponsor];
+    }
+
+    function reimburseRelayer(
+        address relayer,
+        uint256 gasUsed,
+        uint256 gasPrice
+    ) external {
+        require(
+            authorizedRelayers[msg.sender] || 
+            whitelistedSponsors[msg.sender] || 
+            msg.sender == owner(),
+            "Not authorized"
+        );
+
+        uint256 reimbursement = gasUsed * gasPrice;
+        require(address(this).balance >= reimbursement, "Insufficient paymaster balance");
+
+        (bool success, ) = payable(relayer).call{value: reimbursement}("");
+        require(success, "Reimbursement failed");
+
+        sponsorGasSpent[address(this)] += gasUsed;
+    }
+
+    function setAuthorizedRelayer(
+        address relayerContract,
+        bool authorized
+    ) external onlyOwner {
+        authorizedRelayers[relayerContract] = authorized;
+        emit SponsorWhitelisted(relayerContract, authorized);
     }
 
     receive() external payable {
