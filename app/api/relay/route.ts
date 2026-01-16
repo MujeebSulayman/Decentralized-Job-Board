@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ethers } from 'ethers';
-import address from '@/../contracts/contractAddress.json';
+import address from '../../../contracts/contractAddress.json';
 
 // This will be set after deploying the relayer contract
 const RELAYER_ADDRESS = process.env.RELAYER_CONTRACT_ADDRESS || '';

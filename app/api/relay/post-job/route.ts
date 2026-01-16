@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ethers } from 'ethers';
-import address from '@/../contracts/contractAddress.json';
+import address from '../../../../contracts/contractAddress.json';
 
 export async function POST(request: NextRequest) {
   try {
