@@ -83,6 +83,40 @@ async function main() {
 
 		console.log('New Paymaster deployed at:', paymasterAddress, '\n');
 
+		// Connect to JobBoard contract and set the paymaster
+		console.log('Registering paymaster in JobBoard contract...');
+		const JobBoardUpgradeable = await ethers.getContractFactory(
+			'JobBoardUpgradeable'
+		);
+		const jobBoard = JobBoardUpgradeable.attach(proxyAddress);
+
+		// Verify deployer is owner
+		const owner = await jobBoard.owner();
+		if (owner.toLowerCase() !== deployer.address.toLowerCase()) {
+			console.warn(
+				'WARNING: Deployer is not the owner. Cannot set paymaster automatically.'
+			);
+			console.warn('  Owner:', owner);
+			console.warn('  Deployer:', deployer.address);
+			console.warn(
+				'  Please call setPaymaster() manually with the owner account.'
+			);
+		} else {
+			try {
+				const setPaymasterTx = await jobBoard.setPaymaster(
+					paymasterAddress,
+					true
+				);
+				await setPaymasterTx.wait();
+				console.log('Paymaster registered and enabled in JobBoard contract\n');
+			} catch (error) {
+				console.error('Error setting paymaster in JobBoard:', error.message);
+				console.warn(
+					'Please set the paymaster manually by calling setPaymaster()'
+				);
+			}
+		}
+
 		// Update contract addresses file
 		addresses.JobBoardPaymaster = paymasterAddress;
 		fs.writeFileSync(
@@ -98,9 +132,6 @@ async function main() {
 		console.log('\nIMPORTANT:');
 		console.log('  - Update your frontend to use the new paymaster address');
 		console.log('  - The old paymaster is still deployed but no longer used');
-		console.log(
-			'  - You may need to enable the new paymaster on JobBoard if needed'
-		);
 	} catch (error) {
 		console.error('Error redeploying paymaster:', error.message);
 		throw error;

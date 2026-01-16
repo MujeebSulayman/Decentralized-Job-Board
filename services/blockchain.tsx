@@ -29,6 +29,20 @@ const reportError = (error: any) => {
     console.error(error);
   } else if (error?.message) {
     console.error(error.message);
+
+    // Check for NotAuthorized error (paymaster not registered)
+    if (
+      error.message.includes("0xea8e4eb5") ||
+      error.message.includes("NotAuthorized") ||
+      (error.data && error.data === "0xea8e4eb5")
+    ) {
+      console.error(
+        "\n⚠️  PAYMASTER NOT REGISTERED ERROR\n" +
+        "The paymaster contract is not registered in the JobBoard contract.\n" +
+        "To fix this, run: npx hardhat run scripts/set-paymaster.js --network <network>\n" +
+        "Or if you just redeployed the paymaster, the redeploy script should have set it automatically.\n"
+      );
+    }
   } else {
     console.error(JSON.stringify(error, null, 2));
   }
