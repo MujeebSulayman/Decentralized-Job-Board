@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { JobType, WorkMode } from "@/utils/type.dt";
 import { uploadToIPFS } from "@/utils/ipfsUpload";
-import { postJob, getServiceFee } from "@/services/blockchain";
+import { postJob, getServiceFee, getPaymasterEnabled } from "@/services/blockchain";
 import Image from "next/image";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -45,8 +45,7 @@ const PostPage = () => {
   ]);
 
   const [serviceFee, setServiceFee] = useState<string>("0");
-
-
+  const [paymasterEnabled, setPaymasterEnabled] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchServiceFee = async () => {
@@ -59,7 +58,17 @@ const PostPage = () => {
       }
     };
 
+    const fetchPaymasterStatus = async () => {
+      try {
+        const enabled = await getPaymasterEnabled();
+        setPaymasterEnabled(enabled);
+      } catch (error) {
+        console.error("Error fetching paymaster status:", error);
+      }
+    };
+
     fetchServiceFee();
+    fetchPaymasterStatus();
   }, []);
 
   // Initialize TipTap editor
@@ -375,9 +384,15 @@ const PostPage = () => {
                 <div>
                   <p className="text-sm text-purple-300">
                     Service Fee: <span className="font-bold">{serviceFee} ETH</span>
+                    {paymasterEnabled && (
+                      <span className="ml-2 text-xs text-green-400 font-normal">(Gasless - Sponsored)</span>
+                    )}
                   </p>
                   <p className="text-xs text-purple-400/70 mt-0.5">
-                    This fee will be charged when posting the job
+                    {paymasterEnabled 
+                      ? "This transaction will be gasless - no gas fees required!"
+                      : "This fee will be charged when posting the job"
+                    }
                   </p>
                 </div>
               </div>
