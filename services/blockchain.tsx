@@ -802,7 +802,7 @@ const postJobMeta = async (job: JobPostParams): Promise<any> => {
     // Step 2: Encode function call to paymaster
     const paymasterAddress = address.JobBoardPaymaster;
     const paymasterInterface = new ethers.Interface([
-      "function postJobMeta(address user, string memory orgName, string memory title, string memory description, string memory orgEmail, string memory logoCID, string[] memory fieldName, bool[] memory isRequired, uint256 jobType, uint256 workMode, string memory minimumSalary, string memory maximumSalary, uint256 expirationDays, bytes memory signature)",
+      "function postJobMeta(address user, string memory orgName, string memory title, string memory description, string memory orgEmail, string memory logoCID, string[] memory fieldName, bool[] memory isRequired, uint8 jobType, uint8 workMode, string memory minimumSalary, string memory maximumSalary, uint256 expirationDays, bytes memory signature)",
     ]);
 
     const callData = paymasterInterface.encodeFunctionData("postJobMeta", [

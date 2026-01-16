@@ -67,9 +67,8 @@ contract JobBoardRelayer is Ownable, EIP712 {
                     let returndata_size := mload(returnData)
                     revert(add(32, returnData), returndata_size)
                 }
-            } else {
-                revert("Relay execution failed");
             }
+            revert("Relay execution failed: no return data");
         }
 
         try

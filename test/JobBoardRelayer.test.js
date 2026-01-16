@@ -20,7 +20,11 @@ describe('JobBoardRelayer', function () {
 		const jobBoard = await upgrades.deployProxy(
 			JobBoardUpgradeable,
 			[serviceFee],
-			{ initializer: 'initialize', kind: 'transparent' }
+			{
+				initializer: 'initialize',
+				kind: 'transparent',
+				txOverrides: { gasLimit: 10000000 },
+			}
 		);
 		await jobBoard.waitForDeployment();
 
@@ -58,6 +62,12 @@ describe('JobBoardRelayer', function () {
 			to: relayer.address,
 			value: ethers.parseEther('1'),
 		});
+
+		// Authorize relayer in paymaster
+		await paymaster.setAuthorizedRelayer(
+			await relayerContract.getAddress(),
+			true
+		);
 
 		return {
 			deployer,
@@ -123,6 +133,146 @@ describe('JobBoardRelayer', function () {
 	});
 
 	describe('Relay Execution', function () {
+		it('Should successfully relay postJobMeta transaction', async function () {
+			const { user, relayer, jobBoard, paymaster, relayerContract } =
+				await loadFixture(deployContractsFixture);
+
+			const orgName = 'Test Company';
+			const title = 'Software Engineer';
+			const description = 'We are hiring';
+			const orgEmail = 'hr@test.com';
+			const logoCID = 'QmLogo123';
+			const fieldName = [];
+			const isRequired = [];
+			const jobType = 0; // FullTime
+			const workMode = 0; // Remote
+			const minimumSalary = '5000';
+			const maximumSalary = '10000';
+			const expirationDays = 30;
+
+			// Get user's nonce from paymaster
+			const paymasterNonce = await paymaster.getNonce(user.address);
+
+			// Create signature for paymaster (user signs this)
+			const paymasterDomain = {
+				name: PAYMASTER_DOMAIN_NAME,
+				version: PAYMASTER_DOMAIN_VERSION,
+				chainId: (await ethers.provider.getNetwork()).chainId,
+				verifyingContract: await paymaster.getAddress(),
+			};
+
+			const paymasterTypes = {
+				PostJob: [
+					{ name: 'user', type: 'address' },
+					{ name: 'orgName', type: 'string' },
+					{ name: 'title', type: 'string' },
+					{ name: 'description', type: 'string' },
+					{ name: 'orgEmail', type: 'string' },
+					{ name: 'logoCID', type: 'string' },
+					{ name: 'expirationDays', type: 'uint256' },
+					{ name: 'nonce', type: 'uint256' },
+				],
+			};
+
+			const paymasterValue = {
+				user: user.address,
+				orgName,
+				title,
+				description,
+				orgEmail,
+				logoCID,
+				expirationDays,
+				nonce: paymasterNonce.toString(),
+			};
+
+			const paymasterSignature = await user.signTypedData(
+				paymasterDomain,
+				paymasterTypes,
+				paymasterValue
+			);
+
+			// Encode the function call to paymaster
+			const paymasterInterface = new ethers.Interface([
+				'function postJobMeta(address user, string memory orgName, string memory title, string memory description, string memory orgEmail, string memory logoCID, string[] memory fieldName, bool[] memory isRequired, uint8 jobType, uint8 workMode, string memory minimumSalary, string memory maximumSalary, uint256 expirationDays, bytes memory signature)',
+			]);
+
+			const callData = paymasterInterface.encodeFunctionData('postJobMeta', [
+				user.address,
+				orgName,
+				title,
+				description,
+				orgEmail,
+				logoCID,
+				fieldName,
+				isRequired,
+				jobType,
+				workMode,
+				minimumSalary,
+				maximumSalary,
+				expirationDays,
+				paymasterSignature,
+			]);
+
+			// Get relayer nonce
+			const relayerNonce = await relayerContract.getNonce(user.address);
+			const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+
+			// Create signature for relayer (user signs this)
+			const relayerDomain = {
+				name: RELAYER_DOMAIN_NAME,
+				version: RELAYER_DOMAIN_VERSION,
+				chainId: (await ethers.provider.getNetwork()).chainId,
+				verifyingContract: await relayerContract.getAddress(),
+			};
+
+			const relayerTypes = {
+				RelayRequest: [
+					{ name: 'user', type: 'address' },
+					{ name: 'data', type: 'bytes' },
+					{ name: 'nonce', type: 'uint256' },
+					{ name: 'deadline', type: 'uint256' },
+				],
+			};
+
+			const relayerValue = {
+				user: user.address,
+				data: callData,
+				nonce: relayerNonce.toString(),
+				deadline: deadline.toString(),
+			};
+
+			const relayerSignature = await user.signTypedData(
+				relayerDomain,
+				relayerTypes,
+				relayerValue
+			);
+
+			// Execute relay (relayer pays gas)
+			const tx = await relayerContract
+				.connect(relayer)
+				.executeRelay(user.address, callData, deadline, relayerSignature);
+
+			const receipt = await tx.wait();
+
+			// Check event was emitted
+			const event = receipt.logs.find(
+				(log) =>
+					log.topics[0] ===
+					relayerContract.interface.getEvent('RequestExecuted').topicHash
+			);
+			expect(event).to.not.be.undefined;
+
+			// Verify job was posted
+			const allJobs = await jobBoard.getAllJobs();
+			expect(allJobs.length).to.be.greaterThan(0);
+
+			// Find the job we just posted (should be the last one)
+			const job = allJobs[allJobs.length - 1];
+			expect(job.employer.toLowerCase()).to.equal(user.address.toLowerCase());
+			expect(job.title).to.equal(title);
+			expect(job.orgName).to.equal(orgName);
+		});
+
 		it('Should successfully relay submitApplicationMeta transaction', async function () {
 			const { user, relayer, jobBoard, paymaster, relayerContract } =
 				await loadFixture(deployContractsFixture);

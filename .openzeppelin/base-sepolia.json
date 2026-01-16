@@ -749,7 +749,7 @@
             "label": "jobs",
             "offset": 0,
             "slot": "257",
-            "type": "t_mapping(t_uint256,t_struct(JobStruct)5690_storage)",
+            "type": "t_mapping(t_uint256,t_struct(JobStruct)6046_storage)",
             "contract": "JobBoardUpgradeable",
             "src": "contracts\\JobBoardUpgradeable.sol:33"
           },
@@ -757,7 +757,7 @@
             "label": "jobApplications",
             "offset": 0,
             "slot": "258",
-            "type": "t_mapping(t_uint256,t_array(t_struct(ApplicationStruct)5731_storage)dyn_storage)",
+            "type": "t_mapping(t_uint256,t_array(t_struct(ApplicationStruct)6087_storage)dyn_storage)",
             "contract": "JobBoardUpgradeable",
             "src": "contracts\\JobBoardUpgradeable.sol:34"
           },
@@ -773,7 +773,7 @@
             "label": "applicationStates",
             "offset": 0,
             "slot": "260",
-            "type": "t_mapping(t_uint256,t_mapping(t_address,t_enum(ApplicationState)5644))",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_enum(ApplicationState)6000))",
             "contract": "JobBoardUpgradeable",
             "src": "contracts\\JobBoardUpgradeable.sol:37"
           }
@@ -787,11 +787,11 @@
             "label": "string[]",
             "numberOfBytes": "32"
           },
-          "t_array(t_struct(ApplicationStruct)5731_storage)dyn_storage": {
+          "t_array(t_struct(ApplicationStruct)6087_storage)dyn_storage": {
             "label": "struct JobBoardUpgradeable.ApplicationStruct[]",
             "numberOfBytes": "32"
           },
-          "t_array(t_struct(CustomField)5649_storage)dyn_storage": {
+          "t_array(t_struct(CustomField)6005_storage)dyn_storage": {
             "label": "struct JobBoardUpgradeable.CustomField[]",
             "numberOfBytes": "32"
           },
@@ -815,7 +815,7 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_enum(ApplicationState)5644": {
+          "t_enum(ApplicationState)6000": {
             "label": "enum JobBoardUpgradeable.ApplicationState",
             "members": [
               "PENDING",
@@ -825,7 +825,7 @@
             ],
             "numberOfBytes": "1"
           },
-          "t_enum(JobType)5639": {
+          "t_enum(JobType)5995": {
             "label": "enum JobBoardUpgradeable.JobType",
             "members": [
               "FullTime",
@@ -836,7 +836,7 @@
             ],
             "numberOfBytes": "1"
           },
-          "t_enum(WorkMode)5633": {
+          "t_enum(WorkMode)5989": {
             "label": "enum JobBoardUpgradeable.WorkMode",
             "members": [
               "Remote",
@@ -857,7 +857,7 @@
             "label": "mapping(address => bool)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_enum(ApplicationState)5644)": {
+          "t_mapping(t_address,t_enum(ApplicationState)6000)": {
             "label": "mapping(address => enum JobBoardUpgradeable.ApplicationState)",
             "numberOfBytes": "32"
           },
@@ -865,15 +865,15 @@
             "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_array(t_struct(ApplicationStruct)5731_storage)dyn_storage)": {
+          "t_mapping(t_uint256,t_array(t_struct(ApplicationStruct)6087_storage)dyn_storage)": {
             "label": "mapping(uint256 => struct JobBoardUpgradeable.ApplicationStruct[])",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_mapping(t_address,t_enum(ApplicationState)5644))": {
+          "t_mapping(t_uint256,t_mapping(t_address,t_enum(ApplicationState)6000))": {
             "label": "mapping(uint256 => mapping(address => enum JobBoardUpgradeable.ApplicationState))",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(JobStruct)5690_storage)": {
+          "t_mapping(t_uint256,t_struct(JobStruct)6046_storage)": {
             "label": "mapping(uint256 => struct JobBoardUpgradeable.JobStruct)",
             "numberOfBytes": "32"
           },
@@ -881,7 +881,7 @@
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(ApplicationStruct)5731_storage": {
+          "t_struct(ApplicationStruct)6087_storage": {
             "label": "struct JobBoardUpgradeable.ApplicationStruct",
             "members": [
               {
@@ -958,13 +958,13 @@
               },
               {
                 "label": "workMode",
-                "type": "t_enum(WorkMode)5633",
+                "type": "t_enum(WorkMode)5989",
                 "offset": 0,
                 "slot": "12"
               },
               {
                 "label": "jobType",
-                "type": "t_enum(JobType)5639",
+                "type": "t_enum(JobType)5995",
                 "offset": 1,
                 "slot": "12"
               },
@@ -988,7 +988,7 @@
               },
               {
                 "label": "currentState",
-                "type": "t_enum(ApplicationState)5644",
+                "type": "t_enum(ApplicationState)6000",
                 "offset": 0,
                 "slot": "16"
               }
@@ -1007,7 +1007,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(CustomField)5649_storage": {
+          "t_struct(CustomField)6005_storage": {
             "label": "struct JobBoardUpgradeable.CustomField",
             "members": [
               {
@@ -1025,7 +1025,7 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(JobStruct)5690_storage": {
+          "t_struct(JobStruct)6046_storage": {
             "label": "struct JobBoardUpgradeable.JobStruct",
             "members": [
               {
@@ -1066,7 +1066,7 @@
               },
               {
                 "label": "customField",
-                "type": "t_array(t_struct(CustomField)5649_storage)dyn_storage",
+                "type": "t_array(t_struct(CustomField)6005_storage)dyn_storage",
                 "offset": 0,
                 "slot": "6"
               },
@@ -1114,13 +1114,13 @@
               },
               {
                 "label": "jobType",
-                "type": "t_enum(JobType)5639",
+                "type": "t_enum(JobType)5995",
                 "offset": 1,
                 "slot": "12"
               },
               {
                 "label": "workMode",
-                "type": "t_enum(WorkMode)5633",
+                "type": "t_enum(WorkMode)5989",
                 "offset": 2,
                 "slot": "12"
               },

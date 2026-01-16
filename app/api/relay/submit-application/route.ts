@@ -62,12 +62,26 @@ export async function POST(request: NextRequest) {
     const relayer = new ethers.Contract(relayerAddress, relayerAbi, relayerWallet);
 
     // Execute relay transaction (relayer pays gas)
-    const tx = await relayer.executeRelay(
-      userAddress,
-      callData,
-      deadline,
-      relayerSignature
-    );
+    let tx;
+    try {
+      tx = await relayer.executeRelay(
+        userAddress,
+        callData,
+        deadline,
+        relayerSignature
+      );
+    } catch (estimateError: any) {
+      console.error('Estimate gas error:', estimateError);
+      const errorMessage = estimateError.reason || estimateError.message || 'Unknown error';
+      return NextResponse.json(
+        {
+          error: 'Transaction would fail',
+          details: errorMessage,
+          fullError: estimateError.toString(),
+        },
+        { status: 400 }
+      );
+    }
 
     // Wait for transaction
     const receipt = await tx.wait();
@@ -79,10 +93,16 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Relayer error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      reason: error.reason,
+      data: error.data,
+      code: error.code,
+    });
     return NextResponse.json(
       {
         error: error.message || 'Failed to relay transaction',
-        details: error.reason || error.data?.message,
+        details: error.reason || error.data?.message || error.toString(),
       },
       { status: 500 }
     );
