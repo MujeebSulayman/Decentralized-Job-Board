@@ -41,9 +41,9 @@ const PAYMASTER_DOMAIN_VERSION = "1";
 
 const getReadOnlyContract = () => {
   const contractAddress = address.JobBoardProxy;
-  const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL;
+  const rpcUrl = process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL;
   if (!rpcUrl) {
-    throw new Error("BASE_SEPOLIA_RPC_URL is not set");
+    throw new Error("NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL is not set");
   }
   const provider = new ethers.JsonRpcProvider(rpcUrl);
   const contracts = new ethers.Contract(contractAddress, abi.abi, provider);
@@ -73,9 +73,9 @@ const getEthereumContract = async () => {
 
 const getReadOnlyPaymasterContract = () => {
   const paymasterAddress = address.JobBoardPaymaster;
-  const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL;
+  const rpcUrl = process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL;
   if (!rpcUrl) {
-    throw new Error("BASE_SEPOLIA_RPC_URL is not set");
+    throw new Error("NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL is not set");
   }
   const provider = new ethers.JsonRpcProvider(rpcUrl);
   const paymaster = new ethers.Contract(
@@ -121,9 +121,9 @@ const getChainId = async (): Promise<bigint> => {
   } catch (error) {
   }
 
-  const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL;
+  const rpcUrl = process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL;
   if (!rpcUrl) {
-    throw new Error("BASE_SEPOLIA_RPC_URL is not set");
+    throw new Error("NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL is not set");
   }
   const provider = new ethers.JsonRpcProvider(rpcUrl);
   const network = await provider.getNetwork();
