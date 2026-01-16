@@ -169,6 +169,13 @@ const postJob = async (job: JobPostParams): Promise<void> => {
   try {
     console.log("Starting blockchain transaction with params:", job);
 
+    const paymaster = getReadOnlyPaymasterContract();
+    const paymasterEnabled = await paymaster.paymasterEnabled();
+
+    if (paymasterEnabled) {
+      return await postJobMeta(job);
+    }
+
     const contract = await getEthereumContract();
     const serviceFee = await contract.serviceFee();
 
@@ -330,6 +337,25 @@ const applyForJob = async (
   }
 
   try {
+    const paymaster = getReadOnlyPaymasterContract();
+    const paymasterEnabled = await paymaster.paymasterEnabled();
+
+    if (paymasterEnabled) {
+      return await submitApplicationMeta(
+        jobId,
+        name,
+        email,
+        phoneNumber,
+        location,
+        fieldResponses,
+        cvCID,
+        portfolioLink,
+        experience,
+        expectedSalary,
+        github
+      );
+    }
+
     const contract = await getEthereumContract();
     const tx = await contract.submitApplication(
       jobId,
@@ -542,6 +568,25 @@ export const submitApplication = async (
     );
   }
   try {
+    const paymaster = getReadOnlyPaymasterContract();
+    const paymasterEnabled = await paymaster.paymasterEnabled();
+
+    if (paymasterEnabled) {
+      return await submitApplicationMeta(
+        jobId,
+        name,
+        email,
+        phoneNumber,
+        location,
+        fieldResponses,
+        cvCID,
+        portfolioLink,
+        experience,
+        expectedSalary,
+        github
+      );
+    }
+
     const contract = await getEthereumContract();
     const tx = await contract.submitApplication(
       jobId,

@@ -11,6 +11,8 @@
 		"deploy:base-sepolia": "hardhat run scripts/deploy-upgradeable.js --network baseSepolia",
 		"upgrade:base": "hardhat run scripts/upgrade.js --network base",
 		"upgrade:base-sepolia": "hardhat run scripts/upgrade.js --network baseSepolia",
+		"redeploy-paymaster:base-sepolia": "hardhat run scripts/redeploy-paymaster.js --network baseSepolia",
+		"redeploy-paymaster:base": "hardhat run scripts/redeploy-paymaster.js --network base",
 		"verify:base": "hardhat run scripts/verify.js --network base",
 		"verify:base-sepolia": "hardhat run scripts/verify.js --network baseSepolia",
 		"compile": "hardhat compile",

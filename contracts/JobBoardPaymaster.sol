@@ -70,10 +70,6 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         bytes memory signature
     ) external returns (uint256) {
         require(paymasterEnabled, "Paymaster is disabled");
-        require(
-            whitelistedSponsors[msg.sender] || msg.sender == owner(),
-            "Not authorized to sponsor"
-        );
 
         bytes32 hash = _hashPostJob(
             user,
@@ -111,9 +107,9 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         );
         uint256 gasUsed = gasStart - gasleft();
 
-        sponsorGasSpent[msg.sender] += gasUsed;
+        sponsorGasSpent[address(this)] += gasUsed;
 
-        emit TransactionSponsored(user, "postJob", gasUsed, msg.sender);
+        emit TransactionSponsored(user, "postJob", gasUsed, address(this));
         return jobId;
     }
 
@@ -133,10 +129,6 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         bytes memory signature
     ) external {
         require(paymasterEnabled, "Paymaster is disabled");
-        require(
-            whitelistedSponsors[msg.sender] || msg.sender == owner(),
-            "Not authorized to sponsor"
-        );
 
         bytes32 hash = _hashSubmitApplication(
             user,
@@ -173,13 +165,13 @@ contract JobBoardPaymaster is Ownable, EIP712 {
         );
         uint256 gasUsed = gasStart - gasleft();
 
-        sponsorGasSpent[msg.sender] += gasUsed;
+        sponsorGasSpent[address(this)] += gasUsed;
 
         emit TransactionSponsored(
             user,
             "submitApplication",
             gasUsed,
-            msg.sender
+            address(this)
         );
     }
 
