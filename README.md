@@ -1,13 +1,14 @@
 # HemBoard: Decentralized Job Marketplace 🌐💼
 
 ## Overview
-HemBoard is a cutting-edge, blockchain-powered job marketplace that revolutionizes how employers and job seekers connect, offering transparency, security, and efficiency through smart contract technology.
+HemBoard is a cutting-edge, blockchain-powered job marketplace that revolutionizes how employers and job seekers connect, offering transparency, security, and efficiency through smart contract technology. With gasless transactions and sponsored fees, users can post jobs and submit applications without paying gas costs.
 
 ## 🚀 Key Features
 
 ### Smart Contract Capabilities
 - **Flexible Job Posting**: Create detailed job listings with custom fields
 - **Secure Application Management**: Track and manage job applications on-chain
+- **Gasless Transactions**: Post jobs and submit applications with sponsored fees - no gas costs required
 - **Work Mode Flexibility**: Support for remote, onsite, and hybrid work modes
 - **Comprehensive Job Types**: 
   - Full-time
@@ -21,9 +22,11 @@ HemBoard is a cutting-edge, blockchain-powered job marketplace that revolutioniz
 - Leverages OpenZeppelin's security libraries
 - Implements Ownable and ReentrancyGuard for enhanced security
 - Supports IPFS integration for job logos and CVs (via Content Identifiers)
+- Meta-transaction support via JobBoardPaymaster for gasless/sponsored transactions
 
 ## 🛡️ Security Features
 - Owner-controlled service fee management
+- Gasless transaction support with sponsored fees via paymaster contract
 - Job deletion and closure controls
 - Application state tracking
 - Reentrancy protection
@@ -71,8 +74,9 @@ Admins have comprehensive platform management capabilities:
 - **Manage Applications**: Track and control job applications
 
 #### Platform Configuration
-- **Service Fee Management**: Update platform transaction fees
+- **Service Fee Management**: Update platform transaction fees (can be sponsored for gasless transactions)
 - **Funds Withdrawal**: Manage platform-accumulated funds
+- **Paymaster Management**: Enable/disable gasless transactions and manage sponsored fees
 - **Job Monitoring**: Full visibility into all job listings
 
 #### Key Authorization Mechanisms
@@ -103,8 +107,8 @@ Admins have comprehensive platform management capabilities:
 - Job type
 
 ## 🔍 Application Workflow
-1. Job Posting
-2. Application Submission
+1. Job Posting (with optional gasless/sponsored fee support)
+2. Application Submission (with optional gasless/sponsored fee support)
 3. Application State Management
    - Submitted
    - Reviewed
@@ -136,7 +140,7 @@ Admins have comprehensive platform management capabilities:
 ### Setup
 ```bash
 # Clone the repository
-git clone https://github.com/MujeebSulayman/Web3-Job-Board
+git clone https://github.com/MujeebSulayman/Decentralized-Job-Board
 
 # Install dependencies
 npm install
